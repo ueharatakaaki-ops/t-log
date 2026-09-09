@@ -1,0 +1,51 @@
+{
+  "name": "t-log",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "supabase:start": "supabase start",
+    "supabase:reset": "supabase db reset",
+    "supabase:migrate": "supabase migration up",
+    "supabase:types": "supabase gen types typescript --local > types/supabase.ts",
+    "migrate:load-staging": "tsx scripts/migration/01-load-staging.ts",
+    "migrate:build-name-map": "tsx scripts/migration/02-build-name-map.ts",
+    "migrate:transform-load": "tsx scripts/migration/03-transform-load.ts",
+    "migrate:verify": "tsx scripts/migration/04-verify.ts",
+    "test:rls:seed": "tsx scripts/security/seed-test-users.ts",
+    "test:rls": "tsx scripts/security/rls-tests.ts",
+    "test:rls:cleanup": "tsx scripts/security/cleanup-test-users.ts"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/ssr": "^0.5.0",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "zod": "^3.23.0",
+    "puppeteer-core": "^23.0.0",
+    "@sparticuz/chromium": "^123.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0",
+    "supabase": "^1.200.0",
+    "puppeteer": "^23.0.0",
+    "tsx": "^4.15.0",
+    "dotenv": "^16.4.0",
+    "papaparse": "^5.4.1",
+    "@types/papaparse": "^5.3.14",
+    "string-similarity": "^4.0.4",
+    "@types/string-similarity": "^4.0.2"
+  }
+}

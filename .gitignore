@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env.local
+.env*.local
+*.tsbuildinfo
+
+# 移行元の生データ・レビュー用ファイルは個人情報（未成年の氏名・健康情報）を含むため管理外にする
+raw_backup/
+scripts/migration/name-map-review.json
+scripts/migration/transform-errors.json

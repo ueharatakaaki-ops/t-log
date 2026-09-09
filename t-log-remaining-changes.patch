@@ -1,0 +1,450 @@
+diff --git a/components/daily-log/DailyLogForm.tsx b/components/daily-log/DailyLogForm.tsx
+index 3b6340c..5bb685c 100644
+--- a/components/daily-log/DailyLogForm.tsx
++++ b/components/daily-log/DailyLogForm.tsx
+@@ -172,5 +172,4 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
+       </div>
+     </div>
+   );
+-          }
+ }
+diff --git a/components/daily-log/DateChips.tsx b/components/daily-log/DateChips.tsx
+index a81803b..8a2fbb5 100644
+--- a/components/daily-log/DateChips.tsx
++++ b/components/daily-log/DateChips.tsx
+@@ -18,7 +18,7 @@ export function DateChips({
+   today: string;
+ }) {
+   return (
+-    <div className="mb-4 flex gap-2">
++    <div className="mb-4 flex gap-2.5">
+       {dates.map((d) => {
+         const isSelected = d === selected;
+         return (
+@@ -26,7 +26,7 @@ export function DateChips({
+             key={d}
+             href={`/daily-log?date=${d}`}
+             className={[
+-              "h-10 flex-1 rounded-xl text-center text-sm font-semibold leading-10",
++              "h-12 flex-1 rounded-xl text-center text-base font-semibold leading-[3rem]",
+               isSelected ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600",
+             ].join(" ")}
+           >
+diff --git a/components/daily-log/NotesSection.tsx b/components/daily-log/NotesSection.tsx
+index b751317..1c0e375 100644
+--- a/components/daily-log/NotesSection.tsx
++++ b/components/daily-log/NotesSection.tsx
+@@ -26,7 +26,7 @@ export function NotesSection({ notes, onNotesChange }: NotesSectionProps) {
+             key={phrase}
+             type="button"
+             onClick={() => appendPhrase(phrase)}
+-            className="h-9 rounded-full bg-slate-100 px-3 text-xs font-medium text-slate-600 active:bg-slate-200"
++            className="h-11 rounded-full bg-slate-100 px-4 text-sm font-medium text-slate-600 active:bg-slate-200"
+           >
+             + {phrase}
+           </button>
+@@ -36,9 +36,9 @@ export function NotesSection({ notes, onNotesChange }: NotesSectionProps) {
+         value={notes}
+         onChange={(e) => onNotesChange(e.target.value)}
+         maxLength={500}
+-        rows={3}
++        rows={4}
+         placeholder="タップで選ぶか、自由に入力してください（未入力でも送信できます）"
+-        className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-[#0F2537] outline-none focus:border-[#0F2537]"
++        className="w-full rounded-xl border border-slate-200 bg-white p-4 text-base text-[#0F2537] outline-none focus:border-[#0F2537] focus:ring-2 focus:ring-[#00A859]/20"
+       />
+     </div>
+   );
+diff --git a/components/daily-log/NumberScale.tsx b/components/daily-log/NumberScale.tsx
+index f041537..54cc2f8 100644
+--- a/components/daily-log/NumberScale.tsx
++++ b/components/daily-log/NumberScale.tsx
+@@ -29,10 +29,10 @@ export function NumberScale({
+       <div className="mb-2 flex items-baseline justify-between">
+         <span className="text-base font-semibold text-[#0F2537]">{label}</span>
+         {value !== null && (
+-          <span className="text-2xl font-bold text-[#00A859] tabular-nums">{value}</span>
++          <span className="text-3xl font-bold text-[#00A859] tabular-nums">{value}</span>
+         )}
+       </div>
+-      <div className="grid grid-cols-5 gap-2">
++      <div className="grid grid-cols-5 gap-2.5">
+         {numbers.map((n) => {
+           const selected = value === n;
+           const isAlert = alertThreshold !== undefined && n >= alertThreshold;
+@@ -43,7 +43,7 @@ export function NumberScale({
+               onClick={() => onChange(n)}
+               aria-pressed={selected}
+               className={[
+-                "h-14 rounded-xl text-lg font-bold transition-colors",
++                "h-16 rounded-xl text-xl font-bold transition-colors",
+                 selected
+                   ? isAlert
+                     ? "bg-rose-500 text-white"
+diff --git a/components/daily-log/PainSection.tsx b/components/daily-log/PainSection.tsx
+index f3d9c22..f9e1d80 100644
+--- a/components/daily-log/PainSection.tsx
++++ b/components/daily-log/PainSection.tsx
+@@ -63,7 +63,7 @@ export function PainSection({
+           <span className="mb-2 block text-sm font-medium text-slate-600">
+             痛む部位を選択してください（複数選択可）
+           </span>
+-          <div className="flex flex-wrap gap-2">
++          <div className="flex flex-wrap gap-2.5">
+             {PAIN_LOCATIONS.map((loc) => {
+               const selected = painLocations.includes(loc);
+               return (
+@@ -73,7 +73,7 @@ export function PainSection({
+                   onClick={() => toggleLocation(loc)}
+                   aria-pressed={selected}
+                   className={[
+-                    "h-10 rounded-full px-4 text-sm font-semibold transition-colors",
++                    "h-12 rounded-full px-5 text-base font-semibold transition-colors",
+                     selected
+                       ? "bg-rose-500 text-white"
+                       : "bg-rose-50 text-rose-700 active:bg-rose-100",
+diff --git a/components/daily-log/SleepChips.tsx b/components/daily-log/SleepChips.tsx
+index bcd558a..f1f0c0e 100644
+--- a/components/daily-log/SleepChips.tsx
++++ b/components/daily-log/SleepChips.tsx
+@@ -16,10 +16,10 @@ export function SleepChips({ value, onChange, min = 3, max = 11 }: SleepChipsPro
+       <div className="mb-2 flex items-baseline justify-between">
+         <span className="text-base font-semibold text-[#0F2537]">睡眠時間</span>
+         {value !== null && (
+-          <span className="text-2xl font-bold text-[#00A859] tabular-nums">{value}h</span>
++          <span className="text-3xl font-bold text-[#00A859] tabular-nums">{value}h</span>
+         )}
+       </div>
+-      <div className="flex flex-wrap gap-2">
++      <div className="flex flex-wrap gap-2.5">
+         {options.map((h) => {
+           const selected = value === h;
+           return (
+@@ -29,7 +29,7 @@ export function SleepChips({ value, onChange, min = 3, max = 11 }: SleepChipsPro
+               onClick={() => onChange(h)}
+               aria-pressed={selected}
+               className={[
+-                "min-w-[3.5rem] h-11 rounded-full px-3 text-sm font-semibold transition-colors",
++                "min-w-[4rem] h-14 rounded-full px-3 text-base font-semibold transition-colors",
+                 selected
+                   ? "bg-[#0F2537] text-white"
+                   : "bg-slate-100 text-slate-700 active:bg-slate-200",
+diff --git a/components/family/HistoryView.tsx b/components/family/HistoryView.tsx
+index b740cc9..5b45069 100644
+--- a/components/family/HistoryView.tsx
++++ b/components/family/HistoryView.tsx
+@@ -37,7 +37,7 @@ export function HistoryView({ detail }: { detail: Detail }) {
+             type="button"
+             onClick={() => setTab(t.id)}
+             className={[
+-              "h-9 shrink-0 rounded-full px-4 text-sm font-semibold",
++              "h-11 shrink-0 rounded-full px-4 text-sm font-semibold",
+               tab === t.id ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600",
+             ].join(" ")}
+           >
+diff --git a/components/family/PublishedReportList.tsx b/components/family/PublishedReportList.tsx
+index f72d5db..63cffbe 100644
+--- a/components/family/PublishedReportList.tsx
++++ b/components/family/PublishedReportList.tsx
+@@ -30,7 +30,7 @@ export function PublishedReportList({ reports }: { reports: PublishedReportRow[]
+   return (
+     <div className="flex flex-col gap-2">
+       {reports.map((r) => (
+-        <div key={r.id} className="rounded-xl border border-slate-100 bg-white p-4">
++        <div key={r.id} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+           <p className="font-semibold text-[#0F2537]">{r.targetMonth.slice(0, 7)} 月次レポート</p>
+           {r.publishedAt && (
+             <p className="mb-3 text-xs text-slate-400">
+@@ -40,7 +40,7 @@ export function PublishedReportList({ reports }: { reports: PublishedReportRow[]
+           <div className="flex gap-2">
+             <Link
+               href={`/reports/view/${r.id}`}
+-              className="h-9 flex-1 rounded-lg bg-[#0F2537] text-center text-sm font-semibold leading-9 text-white"
++              className="h-12 flex-1 rounded-lg bg-[#0F2537] text-center text-base font-semibold leading-[3rem] text-white"
+             >
+               Webで見る
+             </Link>
+@@ -48,7 +48,7 @@ export function PublishedReportList({ reports }: { reports: PublishedReportRow[]
+               type="button"
+               onClick={() => handleOpenPdf(r.id)}
+               disabled={isPending && openingId === r.id}
+-              className="h-9 flex-1 rounded-lg bg-slate-100 text-sm font-semibold text-slate-700"
++              className="h-12 flex-1 rounded-lg bg-slate-100 text-base font-semibold text-slate-700"
+             >
+               {isPending && openingId === r.id ? "開いています..." : "PDFを開く"}
+             </button>
+diff --git a/components/goal-log/GoalLogForm.tsx b/components/goal-log/GoalLogForm.tsx
+index 4580faa..714dd94 100644
+--- a/components/goal-log/GoalLogForm.tsx
++++ b/components/goal-log/GoalLogForm.tsx
+@@ -62,14 +62,14 @@ export function GoalLogForm({ defaultMonthValue, initial }: GoalLogFormProps) {
+   }
+ 
+   return (
+-    <div className="mx-auto flex max-w-md flex-col gap-6 pb-28">
++    <div className="mx-auto flex max-w-md flex-col gap-8 pb-28">
+       <div>
+         <span className="mb-2 block text-base font-semibold text-[#0F2537]">対象月</span>
+         <input
+           type="month"
+           value={monthValue}
+           onChange={(e) => setMonthValue(e.target.value)}
+-          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537] outline-none focus:border-[#0F2537]"
++          className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-[#0F2537] outline-none focus:border-[#0F2537] focus:ring-2 focus:ring-[#00A859]/20"
+         />
+       </div>
+ 
+diff --git a/components/match-log/MatchLogForm.tsx b/components/match-log/MatchLogForm.tsx
+index 0b594a5..7594992 100644
+--- a/components/match-log/MatchLogForm.tsx
++++ b/components/match-log/MatchLogForm.tsx
+@@ -115,7 +115,7 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
+   }
+ 
+   return (
+-    <div className="mx-auto flex max-w-md flex-col gap-6 pb-28">
++    <div className="mx-auto flex max-w-md flex-col gap-8 pb-28">
+       {upcomingSchedules.length > 0 && (
+         <div>
+           <span className="mb-2 block text-base font-semibold text-[#0F2537]">
+@@ -124,7 +124,7 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
+           <select
+             value={tournamentScheduleId}
+             onChange={(e) => handleSelectSchedule(e.target.value)}
+-            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537]"
++            className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-[#0F2537]"
+           >
+             <option value="">選択しない（自由入力）</option>
+             {upcomingSchedules.map((s) => (
+@@ -143,7 +143,7 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
+           value={matchDate}
+           onChange={(e) => setMatchDate(e.target.value)}
+           max={todayInJst()}
+-          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537] outline-none focus:border-[#0F2537]"
++          className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-[#0F2537] outline-none focus:border-[#0F2537] focus:ring-2 focus:ring-[#00A859]/20"
+         />
+       </div>
+ 
+diff --git a/components/reports/CustomReportForm.tsx b/components/reports/CustomReportForm.tsx
+index 6b06a1b..07d6390 100644
+--- a/components/reports/CustomReportForm.tsx
++++ b/components/reports/CustomReportForm.tsx
+@@ -30,7 +30,7 @@ export function CustomReportForm({ players }: { players: PlayerOption[] }) {
+ 
+   return (
+     <div className="flex flex-col gap-6">
+-      <div className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 sm:flex-row sm:items-end">
++      <div className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:flex-row sm:items-end">
+         <div className="flex-1">
+           <span className="mb-1 block text-xs font-semibold text-slate-500">選手</span>
+           <select
+diff --git a/components/reports/ReportEditor.tsx b/components/reports/ReportEditor.tsx
+index 6c4cc12..4fb8c2d 100644
+--- a/components/reports/ReportEditor.tsx
++++ b/components/reports/ReportEditor.tsx
+@@ -156,7 +156,7 @@ export function ReportEditor({ report }: { report: MonthlyReportDetail }) {
+ 
+ function StatCard({ label, value }: { label: string; value: number | string }) {
+   return (
+-    <div className="rounded-xl border border-slate-100 bg-white p-3 text-center">
++    <div className="rounded-xl border border-slate-100 bg-white p-3 text-center shadow-sm">
+       <p className="text-xl font-bold text-[#00A859]">{value}</p>
+       <p className="text-xs text-slate-500">{label}</p>
+     </div>
+diff --git a/components/reports/ReportWebView.tsx b/components/reports/ReportWebView.tsx
+index a3a81fa..367f76c 100644
+--- a/components/reports/ReportWebView.tsx
++++ b/components/reports/ReportWebView.tsx
+@@ -53,7 +53,7 @@ export function ReportWebView({
+       </div>
+ 
+       <Section title="コンディション推移">
+-        <div className="rounded-xl border border-slate-100 bg-white p-4">
++        <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm print:shadow-none">
+           <DailyTrendChart points={trendPoints} />
+         </div>
+       </Section>
+@@ -103,7 +103,7 @@ export function ReportWebView({
+ 
+ function StatCard({ label, value }: { label: string; value: number | string }) {
+   return (
+-    <div className="rounded-xl border border-slate-100 bg-white p-3 text-center">
++    <div className="rounded-xl border border-slate-100 bg-white p-3 text-center shadow-sm print:shadow-none">
+       <p className="text-xl font-bold text-[#00A859]">{value}</p>
+       <p className="text-xs text-slate-500">{label}</p>
+     </div>
+@@ -121,7 +121,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
+ 
+ function TextCard({ label, text }: { label: string; text: string }) {
+   return (
+-    <div className="rounded-xl border border-slate-100 bg-white p-3">
++    <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm print:shadow-none">
+       <p className="mb-1 text-xs font-semibold text-slate-400">{label}</p>
+       <p className="whitespace-pre-wrap text-sm text-slate-800">{text}</p>
+     </div>
+diff --git a/components/schedule/ScheduleManager.tsx b/components/schedule/ScheduleManager.tsx
+index 979deca..23fdec4 100644
+--- a/components/schedule/ScheduleManager.tsx
++++ b/components/schedule/ScheduleManager.tsx
+@@ -60,12 +60,12 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+         <button
+           type="button"
+           onClick={() => setShowForm(true)}
+-          className="h-12 rounded-xl bg-[#0F2537] text-base font-bold text-white"
++          className="h-14 rounded-xl bg-[#0F2537] text-base font-bold text-white"
+         >
+           + 出場予定の大会を登録
+         </button>
+       ) : (
+-        <div className="flex flex-col gap-4 rounded-xl border border-slate-100 bg-white p-4">
++        <div className="flex flex-col gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+           <TextField label="大会名" value={tournamentName} onChange={setTournamentName} required placeholder="例: アジアオープン" />
+           <div className="grid grid-cols-2 gap-3">
+             <div>
+@@ -74,7 +74,7 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+                 type="date"
+                 value={startDate}
+                 onChange={(e) => setStartDate(e.target.value)}
+-                className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"
++                className="h-14 w-full rounded-xl border border-slate-200 px-3 text-base"
+               />
+             </div>
+             <div>
+@@ -83,7 +83,7 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+                 type="date"
+                 value={endDate}
+                 onChange={(e) => setEndDate(e.target.value)}
+-                className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"
++                className="h-14 w-full rounded-xl border border-slate-200 px-3 text-base"
+               />
+             </div>
+           </div>
+@@ -96,7 +96,7 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+             <button
+               type="button"
+               onClick={() => setShowForm(false)}
+-              className="h-11 flex-1 rounded-xl bg-slate-100 text-sm font-semibold text-slate-700"
++              className="h-12 flex-1 rounded-xl bg-slate-100 text-base font-semibold text-slate-700"
+             >
+               キャンセル
+             </button>
+@@ -104,7 +104,7 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+               type="button"
+               disabled={!tournamentName || !startDate || isPending}
+               onClick={handleAdd}
+-              className="h-11 flex-1 rounded-xl bg-[#0F2537] text-sm font-semibold text-white disabled:opacity-50"
++              className="h-12 flex-1 rounded-xl bg-[#0F2537] text-base font-semibold text-white disabled:opacity-50"
+             >
+               登録する
+             </button>
+@@ -112,10 +112,10 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+         </div>
+       )}
+ 
+-      <div className="flex flex-col gap-2">
++      <div className="flex flex-col gap-3">
+         {schedules.length === 0 && <p className="text-sm text-slate-400">登録済みの大会はありません</p>}
+         {schedules.map((s) => (
+-          <div key={s.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3">
++          <div key={s.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+             <div>
+               <p className="font-semibold text-[#0F2537]">{s.tournamentName}</p>
+               <p className="text-xs text-slate-500">
+@@ -128,7 +128,7 @@ export function ScheduleManager({ schedules }: { schedules: ScheduleRow[] }) {
+               type="button"
+               disabled={isPending}
+               onClick={() => handleDelete(s.id)}
+-              className="text-xs font-semibold text-rose-600"
++              className="-m-2 p-2 text-sm font-semibold text-rose-600"
+             >
+               削除
+             </button>
+diff --git a/components/shared/SingleChoiceChips.tsx b/components/shared/SingleChoiceChips.tsx
+index de2e645..43e2768 100644
+--- a/components/shared/SingleChoiceChips.tsx
++++ b/components/shared/SingleChoiceChips.tsx
+@@ -21,7 +21,7 @@ export function SingleChoiceChips({
+   return (
+     <div>
+       <span className="mb-2 block text-base font-semibold text-[#0F2537]">{label}</span>
+-      <div className="flex flex-wrap gap-2">
++      <div className="flex flex-wrap gap-2.5">
+         {options.map((opt) => {
+           const selected = value === opt.value;
+           return (
+@@ -31,7 +31,7 @@ export function SingleChoiceChips({
+               onClick={() => onChange(opt.value)}
+               aria-pressed={selected}
+               className={[
+-                "h-11 rounded-full px-4 text-sm font-semibold transition-colors",
++                "h-14 rounded-full px-5 text-base font-semibold transition-colors",
+                 selected ? selectedClassName : "bg-slate-100 text-slate-700 active:bg-slate-200",
+               ].join(" ")}
+             >
+diff --git a/components/shared/TextField.tsx b/components/shared/TextField.tsx
+index 38cd710..d81797f 100644
+--- a/components/shared/TextField.tsx
++++ b/components/shared/TextField.tsx
+@@ -31,8 +31,8 @@ export function TextField({
+           onChange={(e) => onChange(e.target.value)}
+           placeholder={placeholder}
+           maxLength={maxLength}
+-          rows={3}
+-          className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-[#0F2537] outline-none focus:border-[#0F2537]"
++          rows={4}
++          className="w-full rounded-xl border border-slate-200 bg-white p-4 text-base text-[#0F2537] outline-none focus:border-[#0F2537] focus:ring-2 focus:ring-[#00A859]/20"
+         />
+       ) : (
+         <input
+@@ -41,7 +41,7 @@ export function TextField({
+           onChange={(e) => onChange(e.target.value)}
+           placeholder={placeholder}
+           maxLength={maxLength}
+-          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537] outline-none focus:border-[#0F2537]"
++          className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-[#0F2537] outline-none focus:border-[#0F2537] focus:ring-2 focus:ring-[#00A859]/20"
+         />
+       )}
+     </div>
+diff --git a/lib/pdf/report-template.ts b/lib/pdf/report-template.ts
+index f680f45..9628639 100644
+--- a/lib/pdf/report-template.ts
++++ b/lib/pdf/report-template.ts
+@@ -19,10 +19,14 @@ const SURFACE_LABEL: Record<string, string> = {
+   indoor: "インドア(カーペット)",
+ };
+ 
++// NLTC公式ブランドカラー。以前はここが #0f172a / #10b981 / #f1f5f9 という
++// 近いが微妙に異なる値になっており、アプリ内の他画面（text-[#0F2537]等）とは
++// 厳密には一致していなかった。実際に保護者・選手に配られるPDFの色なので、
++// ここを正確な値に揃える。
+ const COLORS = {
+-  navy: "#0f172a",
+-  emerald: "#10b981",
+-  bg: "#f1f5f9",
++  navy: "#0F2537",
++  emerald: "#00A859",
++  bg: "#F4F6F8",
+   alertRed: "#f43f5e",
+   alertOrange: "#f97316",
+ };
+diff --git a/tailwind.config.ts b/tailwind.config.ts
+index 31b8b4a..8b972f6 100644
+--- a/tailwind.config.ts
++++ b/tailwind.config.ts
+@@ -5,9 +5,13 @@ const config: Config = {
+   theme: {
+     extend: {
+       colors: {
+-        // Phase0レビュー時に決定済みのNLTCブランドカラー
+-        navy: "#0f172a",
+-        emerald: "#10b981",
++        // NLTC公式ブランドカラー。画面側では現状 text-[#0F2537] のようにアービトラリ値で
++        // 直接指定している箇所が大半だが、今後はこちらの名前付きトークンに寄せていく
++        // （以前ここに入っていた navy: #0f172a / emerald: #10b981 は実際のブランドカラーと
++        // 微妙にズレた値で、かつどこからも参照されていなかったため正しい値に修正した）。
++        navy: "#0F2537", // メイン: ヘッダー・見出し・ナビゲーション
++        accent: "#00A859", // アクセント: 操作ボタン・強調アイコン・ハイライト
++        "surface-bg": "#F4F6F8", // サブ/背景: ベース背景・カード背景
+       },
+       fontFamily: {
+         sans: ["Noto Sans JP", "sans-serif"],

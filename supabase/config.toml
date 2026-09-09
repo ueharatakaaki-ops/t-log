@@ -1,0 +1,24 @@
+project_id = "t-log"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_signup = false          # 選手・保護者のセルフサインアップは許可しない（スタッフによる招待制）
+
+[auth.email]
+enable_signup = false
+enable_confirmations = true
+
+[auth.sms]
+enable_signup = false
