@@ -35,6 +35,7 @@ export function ReportWebView({
     selfScore: null,
     hasPain: false,
     painLocations: [] as string[],
+    notes: null,
   }));
 
   return (
