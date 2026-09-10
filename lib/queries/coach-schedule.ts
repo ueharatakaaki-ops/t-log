@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { todayInJst } from "@/lib/date";
 
 export type CoachScheduleRow = {
   id: string;
@@ -12,7 +13,8 @@ export type CoachScheduleRow = {
 
 export async function getUpcomingSchedulesForSchool(schoolId: string): Promise<CoachScheduleRow[]> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  // サーバーのタイムゾーン（UTC）ではなく、他の画面と同じくJST基準の「今日」で揃える
+  const today = todayInJst();
 
   const { data } = await supabase
     .from("tournament_schedules")
