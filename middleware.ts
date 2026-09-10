@@ -35,21 +35,11 @@ export async function middleware(request: NextRequest) {
 
   const {
     data: { user },
-    error: getUserError,
   } = await supabase.auth.getUser();
 
   // "/" は完全一致のみ公開扱いにする（startsWithだと全ページが"/"にマッチしてしまうため）
   const isRoot = request.nextUrl.pathname === "/";
   const isPublicPath = isRoot || PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p));
-
-  // 原因調査用の一時ログ（Vercelダッシュボードの Logs タブに出力される）。
-  // 問題が解決したら削除してよい。
-  console.log("[middleware]", {
-    path: request.nextUrl.pathname,
-    hasUser: !!user,
-    getUserError: getUserError?.message ?? null,
-    cookieNames: request.cookies.getAll().map((c) => c.name),
-  });
 
   if (!user && !isPublicPath) {
     const loginUrl = new URL("/login", request.url);
