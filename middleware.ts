@@ -50,5 +50,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // /api配下（cronのBearer認証など、独自の認証方式を持つAPIルート）は
+  // このmiddlewareの対象から除外する。除外しないと未ログイン扱いで
+  // 常に/loginへリダイレクトされてしまい、Vercel Cronからの呼び出しが
+  // 到達できなくなる（実際にmonthly-reportsのcronがこれで失敗していた）。
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
