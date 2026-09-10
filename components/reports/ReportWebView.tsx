@@ -29,6 +29,7 @@ export function ReportWebView({
   agreedNotes,
 }: ReportWebViewProps) {
   const trendPoints = stats.dailySeries.map((d) => ({
+    id: d.date,
     logDate: d.date,
     sleepHours: d.sleepHours,
     fatigueLevel: d.fatigueLevel,
@@ -36,6 +37,7 @@ export function ReportWebView({
     hasPain: false,
     painLocations: [] as string[],
     notes: null,
+    likedByCoach: false,
   }));
 
   return (
