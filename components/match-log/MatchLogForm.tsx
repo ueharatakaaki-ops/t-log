@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { SingleChoiceChips } from "@/components/shared/SingleChoiceChips";
 import { TextField } from "@/components/shared/TextField";
 import { submitMatchLog } from "@/app/(player)/match-log/actions";
-import { matchLogSchema, ROUNDS, SURFACES, RESULTS } from "@/lib/validations/match-log";
+import { matchLogSchema, ROUND_CATEGORIES, ROUND_STAGES, SURFACES, RESULTS } from "@/lib/validations/match-log";
 import { todayInJst } from "@/lib/date";
 import type { ScheduleRow } from "@/components/schedule/ScheduleManager";
 
@@ -13,7 +13,8 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
   const [tournamentScheduleId, setTournamentScheduleId] = useState<string>("");
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentGrade, setTournamentGrade] = useState("");
-  const [round, setRound] = useState<string | null>(null);
+  const [roundCategory, setRoundCategory] = useState<string | null>(null);
+  const [roundStage, setRoundStage] = useState<string | null>(null);
   const [opponentName, setOpponentName] = useState("");
   const [opponentClub, setOpponentClub] = useState("");
   const [result, setResult] = useState<string | null>(null);
@@ -34,6 +35,17 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
       if (s.surface) setSurface(s.surface);
     }
   }
+
+  // 練習試合は回戦の概念が無いので区分だけで完結。それ以外は区分+回戦の両方が必要
+  const isPractice = roundCategory === "practice";
+  const round = useMemo(() => {
+    if (!roundCategory) return null;
+    const categoryLabel = ROUND_CATEGORIES.find((c) => c.value === roundCategory)?.label;
+    if (!categoryLabel) return null;
+    if (isPractice) return categoryLabel;
+    const stageLabel = ROUND_STAGES.find((s) => s.value === roundStage)?.label;
+    return stageLabel ? `${categoryLabel} ${stageLabel}` : null;
+  }, [roundCategory, roundStage, isPractice]);
 
   const parsed = useMemo(() => {
     if (!round || !result || !surface) return null;
@@ -72,7 +84,8 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
     // 同日に複数試合を報告するケース（練習試合含む）があるため、日付は保持したままリセットする
     setTournamentName("");
     setTournamentGrade("");
-    setRound(null);
+    setRoundCategory(null);
+    setRoundStage(null);
     setOpponentName("");
     setOpponentClub("");
     setResult(null);
@@ -147,18 +160,30 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
         />
       </div>
 
-      <TextField label="大会名" value={tournamentName} onChange={setTournamentName} required placeholder="例: アジアオープン" />
+      <TextField label="大会名" value={tournamentName} onChange={setTournamentName} required placeholder="例: ○○ジュニア大会" />
       <TextField
         label="大会グレード・レベル"
         value={tournamentGrade}
         onChange={setTournamentGrade}
-        placeholder="例: 国際・国内承認"
+        placeholder="例: 関東承認、草大会"
       />
 
-      <SingleChoiceChips label="ラウンド（回戦）" options={[...ROUNDS]} value={round} onChange={setRound} />
+      <SingleChoiceChips
+        label="区分"
+        options={[...ROUND_CATEGORIES]}
+        value={roundCategory}
+        onChange={(v) => {
+          setRoundCategory(v);
+          if (v === "practice") setRoundStage(null);
+        }}
+      />
 
-      <TextField label="対戦相手" value={opponentName} onChange={setOpponentName} placeholder="例: 仲田陸" />
-      <TextField label="対戦相手の所属クラブ" value={opponentClub} onChange={setOpponentClub} placeholder="例: 高崎テニスクラブ" />
+      {roundCategory && !isPractice && (
+        <SingleChoiceChips label="回戦" options={[...ROUND_STAGES]} value={roundStage} onChange={setRoundStage} />
+      )}
+
+      <TextField label="対戦相手" value={opponentName} onChange={setOpponentName} placeholder="例: 山田花子" />
+      <TextField label="対戦相手の所属クラブ" value={opponentClub} onChange={setOpponentClub} placeholder="例: 日本テニスクラブ" />
 
       <SingleChoiceChips
         label="勝敗"
