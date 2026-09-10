@@ -34,11 +34,17 @@ export async function GET(request: NextRequest) {
   );
 
   const failures: { playerId: string; error: string }[] = [];
+  // AI文章生成（技術・メンタル評価/CONNECT）が失敗した場合、レポート自体の生成は
+  // 成功扱いのままなので原因を別途ここに集めて確認できるようにする
+  const narrativeIssues: { playerId: string; error: string }[] = [];
   let succeeded = 0;
 
   results.forEach((result, i) => {
     if (result.status === "fulfilled" && result.value.ok) {
       succeeded += 1;
+      if (result.value.narrative.status === "failed") {
+        narrativeIssues.push({ playerId: targets[i].id, error: result.value.narrative.error });
+      }
     } else if (result.status === "fulfilled" && !result.value.ok) {
       // 既に公開済みでスキップされたケースも含まれるため、失敗とは限らない
       failures.push({ playerId: targets[i].id, error: result.value.error });
@@ -52,5 +58,6 @@ export async function GET(request: NextRequest) {
     totalPlayers: targets.length,
     succeeded,
     skippedOrFailed: failures,
+    narrativeIssues,
   });
 }

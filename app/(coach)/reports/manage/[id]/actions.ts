@@ -5,8 +5,6 @@ import { z } from "zod";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getMonthlyReport } from "@/lib/queries/monthly-report-detail";
-import { renderMonthlyReportPdf } from "@/lib/pdf/render-report-pdf";
-import type { MatchCardData } from "@/lib/pdf/report-template";
 
 const updateSchema = z.object({
   reportId: z.string().uuid(),
@@ -54,59 +52,25 @@ export async function updateReportContent(
 
 export type PublishReportResult = { ok: true } | { ok: false; error: string };
 
-/** PDFを生成し、Storageへ保存したうえでレポートを公開状態にする */
+/**
+ * レポートを公開状態にする。
+ * 以前はここでPuppeteer(puppeteer-core)によるPDF生成・Storage保存も行っていたが、
+ * Vercelのサーバーレス環境でヘッドレスChromiumの起動が安定せず「PDF生成に失敗しました」
+ * となるケースが多かった。選手・保護者は元々Web版（/reports/view/[reportId]）だけでも
+ * レポート全文を閲覧できるため、PDF生成は撤去し公開処理のみを行う形にシンプル化した。
+ */
 export async function publishReport(reportId: string): Promise<PublishReportResult> {
-  const staff = await requireStaff();
+  await requireStaff();
 
   const report = await getMonthlyReport(reportId);
   if (!report) {
     return { ok: false, error: "レポートが見つかりません" };
   }
 
-  const supabase = await createClient();
-  const [y, m] = report.targetMonth.split("-").map(Number);
-  const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
-
-  const { data: matchLogs } = await supabase
-    .from("match_logs")
-    .select("match_date, tournament_name, tournament_grade, surface, result, score, good_points, bad_next_points")
-    .eq("player_id", report.playerId)
-    .gte("match_date", report.targetMonth)
-    .lt("match_date", nextMonth)
-    .order("match_date", { ascending: true });
-
-  const matches: MatchCardData[] = (matchLogs ?? []).map((m) => ({
-    matchDate: m.match_date,
-    tournamentName: m.tournament_name,
-    tournamentGrade: m.tournament_grade,
-    surface: m.surface,
-    result: m.result,
-    score: m.score,
-    goodPoints: m.good_points,
-    badNextPoints: m.bad_next_points,
-  }));
-
-  let pdfBuffer: Buffer;
-  try {
-    pdfBuffer = await renderMonthlyReportPdf(report, matches);
-  } catch {
-    return { ok: false, error: "PDF生成に失敗しました" };
-  }
-
-  const path = `${staff.schoolId}/${report.playerId}/${report.targetMonth}.pdf`;
   const admin = createAdminClient();
-
-  const { error: uploadError } = await admin.storage
-    .from("monthly-reports")
-    .upload(path, pdfBuffer, { contentType: "application/pdf", upsert: true });
-
-  if (uploadError) {
-    return { ok: false, error: "PDFの保存に失敗しました" };
-  }
-
   const { error: updateError } = await admin
     .from("monthly_reports")
-    .update({ status: "published", pdf_path: path, published_at: new Date().toISOString() })
+    .update({ status: "published", published_at: new Date().toISOString() })
     .eq("id", reportId);
 
   if (updateError) {

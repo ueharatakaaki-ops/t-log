@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { TextField } from "@/components/shared/TextField";
 import { updateReportContent, publishReport } from "@/app/(coach)/reports/manage/[id]/actions";
-import { getSignedReportUrl } from "@/lib/reports/get-signed-report-url";
 import type { MonthlyReportDetail } from "@/lib/queries/monthly-report-detail";
 
 export function ReportEditor({ report }: { report: MonthlyReportDetail }) {
+  const router = useRouter();
   const [connectText, setConnectText] = useState(report.connectText ?? "");
   const [technicalEvaluation, setTechnicalEvaluation] = useState(report.technicalEvaluation ?? "");
   const [mentalEvaluation, setMentalEvaluation] = useState(report.mentalEvaluation ?? "");
@@ -16,7 +17,6 @@ export function ReportEditor({ report }: { report: MonthlyReportDetail }) {
   const [isSaving, startSaving] = useTransition();
   const [isPublishing, startPublishing] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const isPublished = report.status === "published";
 
@@ -43,15 +43,9 @@ export function ReportEditor({ report }: { report: MonthlyReportDetail }) {
         setMessage(res.error);
         return;
       }
-      setMessage("公開しました");
-      const url = await getSignedReportUrl(report.id);
-      setPdfUrl(url);
+      // 公開したレポートをそのままWeb版で確認できるよう画面遷移する
+      router.push(`/reports/manage/${report.id}/view`);
     });
-  }
-
-  async function handleViewPdf() {
-    const url = await getSignedReportUrl(report.id);
-    setPdfUrl(url);
   }
 
   const stats = report.summaryStats;
@@ -124,30 +118,15 @@ export function ReportEditor({ report }: { report: MonthlyReportDetail }) {
             disabled={isPublishing}
             className="h-11 flex-1 rounded-xl bg-[#0F2537] text-sm font-semibold text-white disabled:opacity-50"
           >
-            {isPublishing ? "PDF発行中..." : "公開してPDF発行"}
+            {isPublishing ? "公開中..." : "公開する"}
           </button>
         </div>
       ) : (
-        <div className="flex gap-3">
-          <a
-            href={`/reports/manage/${report.id}/view`}
-            className="h-11 flex-1 rounded-xl bg-[#0F2537] text-center text-sm font-semibold leading-[2.75rem] text-white"
-          >
-            Webで見る
-          </a>
-          <button
-            type="button"
-            onClick={handleViewPdf}
-            className="h-11 flex-1 rounded-xl bg-slate-100 text-sm font-semibold text-slate-700"
-          >
-            PDFを見る
-          </button>
-        </div>
-      )}
-
-      {pdfUrl && (
-        <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#00A859] underline">
-          PDFを開く（10分間有効なリンク）
+        <a
+          href={`/reports/manage/${report.id}/view`}
+          className="block h-11 rounded-xl bg-[#0F2537] text-center text-sm font-semibold leading-[2.75rem] text-white"
+        >
+          Webで見る
         </a>
       )}
     </div>

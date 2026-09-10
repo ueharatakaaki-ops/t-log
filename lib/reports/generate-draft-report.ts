@@ -3,7 +3,14 @@ import { computeMonthlySummaryStats } from "@/lib/reports/compute-summary-stats"
 import { calculateAge } from "@/lib/reports/age-commentary";
 import { generateReportNarrative, type NarrativeMatch, type NarrativeDailyNote } from "@/lib/reports/generate-narrative";
 
-export type GenerateDraftReportResult = { ok: true; reportId: string } | { ok: false; error: string };
+export type NarrativeGenerationStatus =
+  | { status: "generated" }
+  | { status: "skipped_already_has_narrative" }
+  | { status: "failed"; error: string };
+
+export type GenerateDraftReportResult =
+  | { ok: true; reportId: string; narrative: NarrativeGenerationStatus }
+  | { ok: false; error: string };
 
 function previousTargetMonth(targetMonth: string): string {
   const [y, m] = targetMonth.split("-").map(Number);
@@ -75,21 +82,24 @@ export async function generateDraftReportForPlayer(
   const alreadyHasNarrative =
     !!existing?.technical_evaluation || !!existing?.mental_evaluation || !!existing?.connect_text;
 
-  if (!alreadyHasNarrative) {
-    await tryFillNarrative(admin, data.id, playerId, targetMonth, stats);
-  }
+  const narrative: NarrativeGenerationStatus = alreadyHasNarrative
+    ? { status: "skipped_already_has_narrative" }
+    : await tryFillNarrative(admin, data.id, playerId, targetMonth, stats);
 
-  return { ok: true, reportId: data.id };
+  return { ok: true, reportId: data.id, narrative };
 }
 
-/** AIによる技術・メンタル評価/CONNECTの自動生成を試みる。失敗してもレポート生成自体は成功のまま扱う。 */
+/**
+ * AIによる技術・メンタル評価/CONNECTの自動生成を試みる。失敗してもレポート生成自体は
+ * 失敗させず、原因を呼び出し元（cronのレスポンス等）で確認できるようステータスを返す。
+ */
 async function tryFillNarrative(
   admin: ReturnType<typeof createAdminClient>,
   reportId: string,
   playerId: string,
   targetMonth: string,
   stats: Awaited<ReturnType<typeof computeMonthlySummaryStats>>
-): Promise<void> {
+): Promise<NarrativeGenerationStatus> {
   try {
     const [player, dailyLogs, matchLogs, previousReport] = await Promise.all([
       admin.from("players").select("full_name, birthdate, grade, category").eq("id", playerId).single(),
@@ -117,9 +127,14 @@ async function tryFillNarrative(
         .maybeSingle(),
     ]);
 
-    if (!player.data) return;
+    if (!player.data) return { status: "failed", error: "選手情報の取得に失敗しました" };
 
-    if (dailyLogs.error || matchLogs.error) return;
+    if (dailyLogs.error || matchLogs.error) {
+      return {
+        status: "failed",
+        error: `日誌・試合記録の取得に失敗しました: ${dailyLogs.error?.message ?? matchLogs.error?.message ?? ""}`,
+      };
+    }
 
     const dailyNotes: NarrativeDailyNote[] = (dailyLogs.data ?? []).map((d) => ({
       logDate: d.log_date,
@@ -163,19 +178,23 @@ async function tryFillNarrative(
         : null,
     });
 
-    if (result.ok) {
-      await admin
-        .from("monthly_reports")
-        .update({
-          technical_evaluation: result.technicalEvaluation,
-          mental_evaluation: result.mentalEvaluation,
-          connect_text: result.connectText,
-        })
-        .eq("id", reportId)
-        .neq("status", "published");
+    if (!result.ok) {
+      return { status: "failed", error: result.error };
     }
-    // 失敗時は何もしない。コーチが手動で入力する既存フローにフォールバックする。
-  } catch {
-    // AI生成の失敗はレポート生成自体を失敗させない
+
+    await admin
+      .from("monthly_reports")
+      .update({
+        technical_evaluation: result.technicalEvaluation,
+        mental_evaluation: result.mentalEvaluation,
+        connect_text: result.connectText,
+      })
+      .eq("id", reportId)
+      .neq("status", "published");
+
+    return { status: "generated" };
+  } catch (e) {
+    // AI生成の失敗はレポート生成自体を失敗させない。原因は呼び出し元で確認できるよう返す
+    return { status: "failed", error: e instanceof Error ? e.message : String(e) };
   }
 }

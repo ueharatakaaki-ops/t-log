@@ -3,15 +3,6 @@ import { requireStaff } from "@/lib/auth/require-staff";
 import { getMonthlyReport } from "@/lib/queries/monthly-report-detail";
 import { ReportEditor } from "@/components/reports/ReportEditor";
 
-// このページから呼ばれるpublishReport()内でPuppeteer(puppeteer-core)を使うため、
-// Edge Runtimeでは動作しない。デフォルトでNode.js Runtimeだが明示しておく。
-export const runtime = "nodejs";
-// Puppeteerでの起動・レンダリング・PDF化に数秒〜十数秒かかるため、
-// Vercelのデフォルトの関数タイムアウトでは不足する可能性がある。
-// maxDurationの上限はプランによって異なり変更されることもあるため、
-// Vercelダッシュボードの現在の制限を確認のうえ調整すること。
-export const maxDuration = 60;
-
 export default async function ReportDetailPage({
   params,
 }: {
