@@ -16,6 +16,7 @@ export type DailyTrendPoint = {
   selfScore: number | null;
   hasPain: boolean;
   painLocations: string[];
+  notes: string | null;
 };
 
 export type MatchSummary = {
@@ -60,7 +61,7 @@ export async function getPlayerDetail(playerId: string) {
 
   const { data: dailyLogs } = await supabase
     .from("daily_logs")
-    .select("log_date, sleep_hours, fatigue_level, self_score, has_pain, pain_locations")
+    .select("log_date, sleep_hours, fatigue_level, self_score, has_pain, pain_locations, notes")
     .eq("player_id", playerId)
     .gte("log_date", sinceStr)
     .order("log_date", { ascending: true });
@@ -102,6 +103,7 @@ export async function getPlayerDetail(playerId: string) {
     selfScore: l.self_score,
     hasPain: l.has_pain,
     painLocations: l.pain_locations ?? [],
+    notes: l.notes,
   }));
 
   const matches: MatchSummary[] = (matchLogs ?? []).map((m) => ({

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { getPlayerDetail } from "@/lib/queries/player-detail";
 import { DailyTrendChart } from "@/components/coach/DailyTrendChart";
+import { DailyNotesList } from "@/components/coach/DailyNotesList";
 import { MatchHistoryList } from "@/components/coach/MatchHistoryList";
 import { GoalSummaryCard } from "@/components/coach/GoalSummaryCard";
 import { CoachNotesPanel } from "@/components/coach/CoachNotesPanel";
@@ -35,6 +36,10 @@ export default async function PlayerDetailPage({
 
       <Section title="コンディション推移（直近30日）">
         <DailyTrendChart points={dailyTrend} />
+      </Section>
+
+      <Section title="選手のコメント（日誌より）">
+        <DailyNotesList points={dailyTrend} />
       </Section>
 
       <Section title="今月の目標">

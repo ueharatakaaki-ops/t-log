@@ -72,6 +72,7 @@ export function HistoryView({ detail }: { detail: Detail }) {
                 <p className="mt-1 text-xs text-slate-500">
                   睡眠 {d.sleepHours ?? "-"}h ／ 疲労度 {d.fatigueLevel ?? "-"} ／ 自己採点 {d.selfScore ?? "-"}
                 </p>
+                {d.notes && <p className="mt-2 whitespace-pre-wrap text-sm text-[#0F2537]">{d.notes}</p>}
               </div>
             ))}
         </div>
