@@ -7,13 +7,30 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  BarController,
+  LineController,
   Tooltip,
   Legend,
 } from "chart.js";
 import { Chart } from "react-chartjs-2";
 import type { DailyTrendPoint } from "@/lib/queries/player-detail";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+// bar/lineを混在させる<Chart>コンポーネントでは、各データセットのtypeに対応する
+// Controller（BarController/LineController）も明示的に登録しないと、実データが
+// 1件でもある状態で描画しようとした瞬間に
+// "bar" is not a registered controller. というランタイムエラーで落ちる
+// （要素・スケールだけ登録しても足りない）。
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  BarController,
+  LineController,
+  Tooltip,
+  Legend
+);
 
 export function DailyTrendChart({ points }: { points: DailyTrendPoint[] }) {
   if (points.length === 0) {

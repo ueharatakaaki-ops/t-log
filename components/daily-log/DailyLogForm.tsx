@@ -116,7 +116,7 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-8 pb-28">
+    <div className="mx-auto flex max-w-md flex-col gap-8 pb-44">
       <SleepChips value={sleepHours} onChange={setSleepHours} />
 
       <NumberScale
@@ -154,8 +154,11 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
         </p>
       )}
 
-      {/* 画面下部固定の送信ボタン。1画面完結・スクロールのみで完了させる */}
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t border-slate-100 bg-white/95 p-4 backdrop-blur">
+      {/* 画面下部固定の送信ボタン。1画面完結・スクロールのみで完了させる。
+          bottom-16はBottomNav（components/nav/BottomNav.tsx、高さ約4rem）の
+          真上に重なるようにするための値。bottom-0のままだとBottomNav（z-10）の
+          下に隠れてボタンが押せなくなってしまう。 */}
+      <div className="fixed inset-x-0 bottom-16 z-20 mx-auto max-w-md border-t border-slate-100 bg-white/95 p-4 backdrop-blur">
         <button
           type="button"
           disabled={!canSubmit}

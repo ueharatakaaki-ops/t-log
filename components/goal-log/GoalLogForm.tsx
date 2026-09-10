@@ -62,7 +62,7 @@ export function GoalLogForm({ defaultMonthValue, initial }: GoalLogFormProps) {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-8 pb-28">
+    <div className="mx-auto flex max-w-md flex-col gap-8 pb-44">
       <div>
         <span className="mb-2 block text-base font-semibold text-[#0F2537]">対象月</span>
         <input
@@ -114,7 +114,9 @@ export function GoalLogForm({ defaultMonthValue, initial }: GoalLogFormProps) {
         <p className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">{submitError}</p>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t border-slate-100 bg-white/95 p-4 backdrop-blur">
+      {/* bottom-16はBottomNav（高さ約4rem）の上に重ねるための値。bottom-0だと
+          BottomNav（z-10）の下に隠れてボタンが押せなくなる */}
+      <div className="fixed inset-x-0 bottom-16 z-20 mx-auto max-w-md border-t border-slate-100 bg-white/95 p-4 backdrop-blur">
         <button
           type="button"
           disabled={!canSubmit}

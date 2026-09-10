@@ -65,12 +65,12 @@ export async function getPlayerDetail(playerId: string) {
     .gte("log_date", sinceStr)
     .order("log_date", { ascending: true });
 
+  // 選手・保護者が「過去の試合を振り返る」用途で使うため、件数の上限は設けず全件を新しい順で返す
   const { data: matchLogs } = await supabase
     .from("match_logs")
     .select("id, match_date, tournament_name, round, result, score")
     .eq("player_id", playerId)
-    .order("match_date", { ascending: false })
-    .limit(10);
+    .order("match_date", { ascending: false });
 
   const { data: goalLog } = await supabase
     .from("goal_logs")
