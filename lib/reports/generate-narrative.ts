@@ -60,6 +60,24 @@ export type NarrativeResult =
 
 const MODEL = "claude-sonnet-5";
 
+// 3項目をJSONで出力させる方式は、本文中の改行がエスケープされない（生の改行文字が
+// 混ざる）などの理由でJSON.parseに失敗するケースが実際に発生した。
+// Tool use（Function calling）で構造化出力を強制すれば、APIが返すinputは常に
+// パース済みのオブジェクトになりこの種の失敗が起きないため、そちらに切り替える。
+const NARRATIVE_TOOL = {
+  name: "record_report_narrative",
+  description: "月次レポートの技術・戦術面の記録、メンタル・取り組み姿勢の記録、CONNECT（因果関係の分析）を記録する。",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      technicalEvaluation: { type: "string", description: "技術・戦術面の記録・事実ベース" },
+      mentalEvaluation: { type: "string", description: "メンタル・取り組み姿勢の記録" },
+      connectText: { type: "string", description: "CONNECT：技術の繋がり・因果関係の分析" },
+    },
+    required: ["technicalEvaluation", "mentalEvaluation", "connectText"],
+  },
+};
+
 export async function generateReportNarrative(input: NarrativeInput): Promise<NarrativeResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -84,8 +102,10 @@ export async function generateReportNarrative(input: NarrativeInput): Promise<Na
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 3000,
+        max_tokens: 4096,
         messages: [{ role: "user", content: prompt }],
+        tools: [NARRATIVE_TOOL],
+        tool_choice: { type: "tool", name: NARRATIVE_TOOL.name },
       }),
     });
   } catch {
@@ -98,8 +118,17 @@ export async function generateReportNarrative(input: NarrativeInput): Promise<Na
   }
 
   const data = await response.json();
-  const text: string = data?.content?.[0]?.text ?? "";
-  const parsed = extractJson(text);
+
+  if (data?.stop_reason === "max_tokens") {
+    return { ok: false, error: "AIの応答が長すぎて途中で打ち切られました（max_tokens超過）" };
+  }
+
+  const toolUse = (data?.content ?? []).find(
+    (block: { type?: string; name?: string }) => block?.type === "tool_use" && block?.name === NARRATIVE_TOOL.name
+  );
+  const parsed = toolUse?.input as
+    | { technicalEvaluation?: string; mentalEvaluation?: string; connectText?: string }
+    | undefined;
 
   if (!parsed || !parsed.technicalEvaluation || !parsed.mentalEvaluation || !parsed.connectText) {
     return { ok: false, error: "AIの応答から必要な項目を取得できませんでした" };
@@ -111,18 +140,6 @@ export async function generateReportNarrative(input: NarrativeInput): Promise<Na
     mentalEvaluation: parsed.mentalEvaluation,
     connectText: parsed.connectText,
   };
-}
-
-function extractJson(
-  text: string
-): { technicalEvaluation?: string; mentalEvaluation?: string; connectText?: string } | null {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return null;
-  }
 }
 
 function buildPrompt(input: NarrativeInput): string {
@@ -210,6 +227,5 @@ ${previousText}
 - 「今後の技術テーマ」「今後の決め事・アドバイス」（コーチ自身の考察部分）はここでは書かない。コーチが別途アプリ上で入力する。
 
 # 出力形式
-説明文や前置きは一切書かず、以下のJSON形式のみを出力してください（コードブロック記号なし、キーはダブルクォート）。
-{"technicalEvaluation": "...", "mentalEvaluation": "...", "connectText": "..."}`;
+record_report_narrative ツールを呼び出して、3項目をそのまま渡してください。説明文や前置きは不要です。`;
 }
