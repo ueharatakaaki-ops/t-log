@@ -33,7 +33,7 @@ export function DateChips({
             href={`/daily-log?date=${d}`}
             className={[
               "h-12 flex-1 rounded-xl text-center text-base font-semibold leading-[3rem]",
-              isSelected ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600",
+              isSelected ? "bg-[#0F2537] text-white" : "border border-slate-300 bg-white text-slate-600",
             ].join(" ")}
           >
             {formatShort(d, today)}

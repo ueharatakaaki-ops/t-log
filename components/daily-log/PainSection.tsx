@@ -37,7 +37,7 @@ export function PainSection({
             "h-14 rounded-xl text-lg font-bold transition-colors",
             hasPain === false
               ? "bg-[#00A859] text-white"
-              : "bg-slate-100 text-slate-700 active:bg-slate-200",
+              : "border border-slate-300 bg-white text-slate-700 active:bg-slate-100",
           ].join(" ")}
         >
           なし
@@ -50,7 +50,7 @@ export function PainSection({
             "h-14 rounded-xl text-lg font-bold transition-colors",
             hasPain === true
               ? "bg-rose-500 text-white"
-              : "bg-slate-100 text-slate-700 active:bg-slate-200",
+              : "border border-slate-300 bg-white text-slate-700 active:bg-slate-100",
           ].join(" ")}
         >
           あり

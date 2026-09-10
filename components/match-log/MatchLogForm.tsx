@@ -106,7 +106,7 @@ export function MatchLogForm({ upcomingSchedules = [] }: { upcomingSchedules?: S
         <button
           type="button"
           onClick={resetForNextEntry}
-          className="h-11 rounded-xl bg-slate-100 px-5 text-sm font-semibold text-slate-700 active:bg-slate-200"
+          className="h-11 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 active:bg-slate-100"
         >
           続けて別の試合を登録する
         </button>

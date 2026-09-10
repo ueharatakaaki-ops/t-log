@@ -32,7 +32,7 @@ export function SleepChips({ value, onChange, min = 3, max = 11 }: SleepChipsPro
                 "min-w-[4rem] h-14 rounded-full px-3 text-base font-semibold transition-colors",
                 selected
                   ? "bg-[#0F2537] text-white"
-                  : "bg-slate-100 text-slate-700 active:bg-slate-200",
+                  : "border border-slate-300 bg-white text-slate-700 active:bg-slate-100",
               ].join(" ")}
             >
               {h}

@@ -48,7 +48,7 @@ export function NumberScale({
                   ? isAlert
                     ? "bg-rose-500 text-white"
                     : "bg-[#0F2537] text-white"
-                  : "bg-slate-100 text-slate-700 active:bg-slate-200",
+                  : "border border-slate-300 bg-white text-slate-700 active:bg-slate-100",
               ].join(" ")}
             >
               {n}

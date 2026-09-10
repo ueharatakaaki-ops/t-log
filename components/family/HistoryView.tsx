@@ -38,7 +38,7 @@ export function HistoryView({ detail }: { detail: Detail }) {
             onClick={() => setTab(t.id)}
             className={[
               "h-11 shrink-0 rounded-full px-4 text-sm font-semibold",
-              tab === t.id ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600",
+              tab === t.id ? "bg-[#0F2537] text-white" : "border border-slate-300 bg-white text-slate-600",
             ].join(" ")}
           >
             {t.label}

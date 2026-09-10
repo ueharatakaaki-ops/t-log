@@ -26,7 +26,7 @@ export function NotesSection({ notes, onNotesChange }: NotesSectionProps) {
             key={phrase}
             type="button"
             onClick={() => appendPhrase(phrase)}
-            className="h-11 rounded-full bg-slate-100 px-4 text-sm font-medium text-slate-600 active:bg-slate-200"
+            className="h-11 rounded-full border border-slate-300 bg-white px-4 text-sm font-medium text-slate-600 active:bg-slate-100"
           >
             + {phrase}
           </button>

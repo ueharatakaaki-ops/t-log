@@ -32,7 +32,9 @@ export function SingleChoiceChips({
               aria-pressed={selected}
               className={[
                 "h-14 rounded-full px-5 text-base font-semibold transition-colors",
-                selected ? selectedClassName : "bg-slate-100 text-slate-700 active:bg-slate-200",
+                selected
+                  ? selectedClassName
+                  : "border border-slate-300 bg-white text-slate-700 active:bg-slate-100",
               ].join(" ")}
             >
               {opt.label}
