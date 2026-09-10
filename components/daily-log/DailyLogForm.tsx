@@ -116,7 +116,7 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6 pb-28">
+    <div className="mx-auto flex max-w-md flex-col gap-8 pb-28">
       <SleepChips value={sleepHours} onChange={setSleepHours} />
 
       <NumberScale
