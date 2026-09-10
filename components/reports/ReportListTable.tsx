@@ -33,10 +33,11 @@ export function ReportListTable({
         setMessages((prev) => ({ ...prev, [playerId]: res.error }));
         return;
       }
-      if (res.narrative.status === "failed") {
+      const narrative = res.narrative;
+      if (narrative.status === "failed") {
         setMessages((prev) => ({
           ...prev,
-          [playerId]: `下書きは作成できましたが、AI文章（技術・メンタル評価）の自動生成に失敗しました: ${res.narrative.error}／編集画面から手入力するか、原因を解消のうえ再生成してください`,
+          [playerId]: `下書きは作成できましたが、AI文章（技術・メンタル評価）の自動生成に失敗しました: ${narrative.error}／編集画面から手入力するか、原因を解消のうえ再生成してください`,
         }));
       }
       // 生成後はサーバー側でrevalidateされるため、ページ再取得で状態が更新される
