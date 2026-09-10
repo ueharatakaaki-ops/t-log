@@ -39,7 +39,7 @@ export default async function PlayerDetailPage({
       </Section>
 
       <Section title="選手のコメント（日誌より）">
-        <DailyNotesList points={dailyTrend} />
+        <DailyNotesList playerId={profile.id} points={dailyTrend} />
       </Section>
 
       <Section title="今月の目標">

@@ -42,3 +42,42 @@ export async function addCoachNote(input: {
   revalidatePath(`/players/${parsed.data.playerId}`);
   return { ok: true };
 }
+
+const toggleDailyLogLikeSchema = z.object({
+  dailyLogId: z.string().uuid(),
+  playerId: z.string().uuid(),
+  liked: z.boolean(),
+});
+
+export type ToggleDailyLogLikeResult = { ok: true } | { ok: false; error: string };
+
+/** 選手が日誌に書いたコメントに対して、コーチが「いいね」をつけ外しする */
+export async function toggleDailyLogLike(input: {
+  dailyLogId: string;
+  playerId: string;
+  liked: boolean;
+}): Promise<ToggleDailyLogLikeResult> {
+  const parsed = toggleDailyLogLikeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "入力内容を確認してください" };
+  }
+
+  const staff = await requireStaff();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("daily_logs")
+    .update(
+      parsed.data.liked
+        ? { liked_by_coach_id: staff.userId, liked_by_coach_at: new Date().toISOString() }
+        : { liked_by_coach_id: null, liked_by_coach_at: null }
+    )
+    .eq("id", parsed.data.dailyLogId);
+
+  if (error) {
+    return { ok: false, error: "更新に失敗しました" };
+  }
+
+  revalidatePath(`/players/${parsed.data.playerId}`);
+  return { ok: true };
+}
