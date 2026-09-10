@@ -2,14 +2,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-
-const ROLE_LANDING: Record<string, string> = {
-  player: "/daily-log",
-  coach: "/dashboard",
-  parent: "/reports",
-  school_admin: "/admin/users",
-  system_admin: "/admin/users",
-};
+import { ROLE_LANDING } from "@/lib/auth/role-landing";
 
 /**
  * トップページ。
