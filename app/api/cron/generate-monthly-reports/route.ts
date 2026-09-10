@@ -39,11 +39,11 @@ export async function GET(request: NextRequest) {
   results.forEach((result, i) => {
     if (result.status === "fulfilled" && result.value.ok) {
       succeeded += 1;
-    } else {
-      const errorMessage =
-        result.status === "fulfilled" ? result.value.error : String(result.reason);
+    } else if (result.status === "fulfilled" && !result.value.ok) {
       // 既に公開済みでスキップされたケースも含まれるため、失敗とは限らない
-      failures.push({ playerId: targets[i].id, error: errorMessage });
+      failures.push({ playerId: targets[i].id, error: result.value.error });
+    } else if (result.status === "rejected") {
+      failures.push({ playerId: targets[i].id, error: String(result.reason) });
     }
   });
 
