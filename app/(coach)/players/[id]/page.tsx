@@ -6,6 +6,7 @@ import { DailyNotesList } from "@/components/coach/DailyNotesList";
 import { MatchHistoryList } from "@/components/coach/MatchHistoryList";
 import { GoalSummaryCard } from "@/components/coach/GoalSummaryCard";
 import { CoachNotesPanel } from "@/components/coach/CoachNotesPanel";
+import { PhysicalMeasurementHistoryList } from "@/components/physical/PhysicalMeasurementHistoryList";
 
 export default async function PlayerDetailPage({
   params,
@@ -18,7 +19,7 @@ export default async function PlayerDetailPage({
 
   if (!detail) notFound();
 
-  const { profile, dailyTrend, matches, goal, coachNotes } = detail;
+  const { profile, dailyTrend, matches, goal, goalHistory, physicalMeasurements, coachNotes } = detail;
 
   return (
     <main className="min-h-screen bg-[#F4F6F8] px-4 pt-6 pb-12">
@@ -43,11 +44,15 @@ export default async function PlayerDetailPage({
       </Section>
 
       <Section title="今月の目標">
-        <GoalSummaryCard goal={goal} />
+        <GoalSummaryCard goal={goal} history={goalHistory} />
       </Section>
 
       <Section title="試合履歴">
         <MatchHistoryList matches={matches} showShareLink />
+      </Section>
+
+      <Section title="身体データ">
+        <PhysicalMeasurementHistoryList measurements={physicalMeasurements} />
       </Section>
 
       <Section title="コーチメモ">

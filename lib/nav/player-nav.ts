@@ -13,4 +13,5 @@ export const PLAYER_NAV_ITEMS: NavItem[] = [
   { href: "/schedule", label: "大会予定" },
   { href: "/history", label: "履歴" },
   { href: "/reports", label: "レポート" },
+  { href: "/physical", label: "身体" },
 ];

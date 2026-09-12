@@ -46,7 +46,43 @@ export type GoalSummary = {
   physicalGoal: string | null;
   actionPlan: string | null;
   coachFeedback: string | null;
+  progressPercent: number | null;
 };
+
+export type PhysicalMeasurementRecord = {
+  id: string;
+  measuredDate: string;
+  heightCm: number | null;
+  weightKg: number | null;
+  eyesightLeft: number | null;
+  eyesightRight: number | null;
+  gripStrengthLeft: number | null;
+  gripStrengthRight: number | null;
+  dominantHand: "right" | "left" | null;
+  racket: string | null;
+  shoes: string | null;
+  strings: string | null;
+};
+
+// app/(player)/physical/actions.ts（選手本人の記録取得）とここの両方から使うため、
+// DBの生の行 → 画面用の型への変換ロジックを共通化しておく
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapPhysicalMeasurement(row: any): PhysicalMeasurementRecord {
+  return {
+    id: row.id,
+    measuredDate: row.measured_date,
+    heightCm: row.height_cm,
+    weightKg: row.weight_kg,
+    eyesightLeft: row.eyesight_left,
+    eyesightRight: row.eyesight_right,
+    gripStrengthLeft: row.grip_strength_left,
+    gripStrengthRight: row.grip_strength_right,
+    dominantHand: row.dominant_hand,
+    racket: row.racket,
+    shoes: row.shoes,
+    strings: row.strings,
+  };
+}
 
 export async function getPlayerDetail(playerId: string) {
   const supabase = await createClient();
@@ -77,13 +113,20 @@ export async function getPlayerDetail(playerId: string) {
     .eq("player_id", playerId)
     .order("match_date", { ascending: false });
 
-  const { data: goalLog } = await supabase
+  // 「目標が書き換わると消える」という指摘への対応として、最新月だけでなく
+  // 過去の月分もすべて取得する（データ自体は元々消えておらず、表示側で最新のみに
+  // 絞っていたのが実態だった）
+  const { data: goalLogs } = await supabase
     .from("goal_logs")
-    .select("target_month, technical_goal, physical_goal, action_plan, coach_feedback")
+    .select("target_month, technical_goal, physical_goal, action_plan, coach_feedback, progress_percent")
     .eq("player_id", playerId)
-    .order("target_month", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("target_month", { ascending: false });
+
+  const { data: physicalMeasurementRows } = await supabase
+    .from("physical_measurements")
+    .select("*")
+    .eq("player_id", playerId)
+    .order("measured_date", { ascending: false });
 
   const { data: notes } = await supabase
     .from("coach_notes")
@@ -123,15 +166,21 @@ export async function getPlayerDetail(playerId: string) {
     badNextPoints: m.bad_next_points,
   }));
 
-  const goal: GoalSummary | null = goalLog
-    ? {
-        targetMonth: goalLog.target_month,
-        technicalGoal: goalLog.technical_goal,
-        physicalGoal: goalLog.physical_goal,
-        actionPlan: goalLog.action_plan,
-        coachFeedback: goalLog.coach_feedback,
-      }
-    : null;
+  const goalSummaries: GoalSummary[] = (goalLogs ?? []).map((g) => ({
+    targetMonth: g.target_month,
+    technicalGoal: g.technical_goal,
+    physicalGoal: g.physical_goal,
+    actionPlan: g.action_plan,
+    coachFeedback: g.coach_feedback,
+    progressPercent: g.progress_percent,
+  }));
+
+  const goal: GoalSummary | null = goalSummaries[0] ?? null;
+  const goalHistory: GoalSummary[] = goalSummaries.slice(1);
+
+  const physicalMeasurements: PhysicalMeasurementRecord[] = (physicalMeasurementRows ?? []).map(
+    mapPhysicalMeasurement
+  );
 
   const coachNotes: CoachNoteRow[] = (notes ?? []).map((n) => ({
     id: n.id,
@@ -141,5 +190,5 @@ export async function getPlayerDetail(playerId: string) {
     coachId: n.coach_id,
   }));
 
-  return { profile, dailyTrend, matches, goal, coachNotes };
+  return { profile, dailyTrend, matches, goal, goalHistory, physicalMeasurements, coachNotes };
 }

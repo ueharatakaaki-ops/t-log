@@ -4,11 +4,13 @@ import { useState } from "react";
 import { DailyTrendChart } from "@/components/coach/DailyTrendChart";
 import { MatchHistoryList } from "@/components/coach/MatchHistoryList";
 import { GoalSummaryCard } from "@/components/coach/GoalSummaryCard";
+import { PhysicalMeasurementHistoryList } from "@/components/physical/PhysicalMeasurementHistoryList";
 import type {
   PlayerProfile,
   DailyTrendPoint,
   MatchSummary,
   GoalSummary,
+  PhysicalMeasurementRecord,
 } from "@/lib/queries/player-detail";
 
 type Detail = {
@@ -16,6 +18,8 @@ type Detail = {
   dailyTrend: DailyTrendPoint[];
   matches: MatchSummary[];
   goal: GoalSummary | null;
+  goalHistory?: GoalSummary[];
+  physicalMeasurements?: PhysicalMeasurementRecord[];
 };
 
 const TABS = [
@@ -23,6 +27,7 @@ const TABS = [
   { id: "daily", label: "日別ログ" },
   { id: "match", label: "試合履歴" },
   { id: "goal", label: "今月の目標" },
+  { id: "physical", label: "身体データ" },
 ] as const;
 
 export function HistoryView({ detail }: { detail: Detail }) {
@@ -82,7 +87,10 @@ export function HistoryView({ detail }: { detail: Detail }) {
       )}
 
       {tab === "match" && <MatchHistoryList matches={detail.matches} />}
-      {tab === "goal" && <GoalSummaryCard goal={detail.goal} />}
+      {tab === "goal" && <GoalSummaryCard goal={detail.goal} history={detail.goalHistory} />}
+      {tab === "physical" && (
+        <PhysicalMeasurementHistoryList measurements={detail.physicalMeasurements ?? []} />
+      )}
     </div>
   );
 }

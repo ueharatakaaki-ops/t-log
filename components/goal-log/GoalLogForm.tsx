@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { TextField } from "@/components/shared/TextField";
-import { submitGoalLog } from "@/app/(player)/goal-log/actions";
+import { ProgressScale } from "@/components/goal-log/ProgressScale";
+import { submitGoalLog, updateGoalProgress } from "@/app/(player)/goal-log/actions";
 import { goalLogSchema, monthInputToTargetMonth } from "@/lib/validations/goal-log";
 
 type GoalLogFormProps = {
@@ -12,6 +13,7 @@ type GoalLogFormProps = {
     physicalGoal: string;
     actionPlan: string;
     coachFeedback: string | null;
+    progressPercent: number | null;
   } | null;
 };
 
@@ -20,10 +22,25 @@ export function GoalLogForm({ defaultMonthValue, initial }: GoalLogFormProps) {
   const [technicalGoal, setTechnicalGoal] = useState(initial?.technicalGoal ?? "");
   const [physicalGoal, setPhysicalGoal] = useState(initial?.physicalGoal ?? "");
   const [actionPlan, setActionPlan] = useState(initial?.actionPlan ?? "");
+  const [progressPercent, setProgressPercent] = useState<number | null>(
+    initial?.progressPercent ?? null
+  );
 
   const [isPending, startTransition] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  const [isProgressPending, startProgressTransition] = useTransition();
+  const [progressSaved, setProgressSaved] = useState(false);
+
+  function handleProgressChange(n: number) {
+    setProgressPercent(n);
+    setProgressSaved(false);
+    startProgressTransition(async () => {
+      const res = await updateGoalProgress(monthInputToTargetMonth(defaultMonthValue), n);
+      if (res.ok) setProgressSaved(true);
+    });
+  }
 
   const parsed = useMemo(() => {
     return goalLogSchema.safeParse({
@@ -100,6 +117,15 @@ export function GoalLogForm({ defaultMonthValue, initial }: GoalLogFormProps) {
         maxLength={500}
         placeholder="例: 週2回セカンドサーブだけの練習時間を作る"
       />
+
+      {initial && (
+        <div>
+          <ProgressScale value={progressPercent} onChange={handleProgressChange} disabled={isProgressPending} />
+          <p className="mt-1 text-xs text-slate-400">
+            {isProgressPending ? "保存中..." : progressSaved ? "保存しました" : "タップするとその場で保存されます"}
+          </p>
+        </div>
+      )}
 
       {initial?.coachFeedback && (
         <div className="rounded-xl bg-slate-100 p-4">
