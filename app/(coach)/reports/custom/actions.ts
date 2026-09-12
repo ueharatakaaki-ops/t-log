@@ -41,7 +41,7 @@ export async function computeCustomReport(
 
   const { data: matchLogs } = await supabase
     .from("match_logs")
-    .select("id, match_date, tournament_name, round, result, score")
+    .select("id, match_date, tournament_name, round, result, score, good_points, bad_next_points")
     .eq("player_id", playerId)
     .gte("match_date", startDate)
     .lt("match_date", endExclusiveStr)
@@ -54,6 +54,8 @@ export async function computeCustomReport(
     round: m.round,
     result: m.result,
     score: m.score,
+    goodPoints: m.good_points,
+    badNextPoints: m.bad_next_points,
   }));
 
   return { ok: true, playerName: player.full_name, stats, matches };

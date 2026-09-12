@@ -36,7 +36,7 @@ export default async function FamilyReportWebViewPage({
 
   const { data: matchLogs } = await supabase
     .from("match_logs")
-    .select("id, match_date, tournament_name, round, result, score")
+    .select("id, match_date, tournament_name, round, result, score, good_points, bad_next_points")
     .eq("player_id", report.player_id)
     .gte("match_date", report.target_month)
     .lt("match_date", nextMonth)
@@ -49,6 +49,8 @@ export default async function FamilyReportWebViewPage({
     round: m.round,
     result: m.result,
     score: m.score,
+    goodPoints: m.good_points,
+    badNextPoints: m.bad_next_points,
   }));
 
   const player = Array.isArray(report.players) ? report.players[0] : report.players;

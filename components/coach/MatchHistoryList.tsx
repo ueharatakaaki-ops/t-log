@@ -30,6 +30,22 @@ export function MatchHistoryList({
           <p className="mt-1 text-xs text-slate-500">
             {m.matchDate} {m.round && `／ ${m.round}`} {m.score && `／ ${m.score}`}
           </p>
+          {(m.goodPoints || m.badNextPoints) && (
+            <div className="mt-2 flex flex-col gap-1 text-xs">
+              {m.goodPoints && (
+                <p className="text-slate-600">
+                  <span className="font-semibold text-emerald-600">GOOD：</span>
+                  {m.goodPoints}
+                </p>
+              )}
+              {m.badNextPoints && (
+                <p className="text-slate-600">
+                  <span className="font-semibold text-amber-600">次への課題：</span>
+                  {m.badNextPoints}
+                </p>
+              )}
+            </div>
+          )}
           {showShareLink && (
             <Link href={`/matches/${m.id}/card`} className="mt-2 inline-block text-xs font-semibold text-[#00A859]">
               SNS用カードを作る →

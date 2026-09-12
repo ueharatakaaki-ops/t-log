@@ -21,7 +21,7 @@ export default async function CoachReportWebViewPage({
 
   const { data: matchLogs } = await supabase
     .from("match_logs")
-    .select("id, match_date, tournament_name, round, result, score")
+    .select("id, match_date, tournament_name, round, result, score, good_points, bad_next_points")
     .eq("player_id", report.playerId)
     .gte("match_date", report.targetMonth)
     .lt("match_date", nextMonth)
@@ -34,6 +34,8 @@ export default async function CoachReportWebViewPage({
     round: mlog.round,
     result: mlog.result,
     score: mlog.score,
+    goodPoints: mlog.good_points,
+    badNextPoints: mlog.bad_next_points,
   }));
 
   return (

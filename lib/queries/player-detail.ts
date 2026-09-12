@@ -28,6 +28,8 @@ export type MatchSummary = {
   round: string | null;
   result: "win" | "lose" | null;
   score: string | null;
+  goodPoints: string | null;
+  badNextPoints: string | null;
 };
 
 export type CoachNoteRow = {
@@ -71,7 +73,7 @@ export async function getPlayerDetail(playerId: string) {
   // 選手・保護者が「過去の試合を振り返る」用途で使うため、件数の上限は設けず全件を新しい順で返す
   const { data: matchLogs } = await supabase
     .from("match_logs")
-    .select("id, match_date, tournament_name, round, result, score")
+    .select("id, match_date, tournament_name, round, result, score, good_points, bad_next_points")
     .eq("player_id", playerId)
     .order("match_date", { ascending: false });
 
@@ -117,6 +119,8 @@ export async function getPlayerDetail(playerId: string) {
     round: m.round,
     result: m.result,
     score: m.score,
+    goodPoints: m.good_points,
+    badNextPoints: m.bad_next_points,
   }));
 
   const goal: GoalSummary | null = goalLog
