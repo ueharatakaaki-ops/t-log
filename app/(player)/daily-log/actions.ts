@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { dailyLogSchema, type DailyLogInput } from "@/lib/validations/daily-log";
-import { recentJstDates } from "@/lib/date";
+import { isDailyLogEditable } from "@/lib/date";
 
 export type SubmitDailyLogResult =
   | { ok: true }
@@ -19,9 +19,10 @@ export async function submitDailyLog(input: DailyLogInput): Promise<SubmitDailyL
     };
   }
 
-  // 選手が直接入力できるのは直近3日間のみ（それより過去の修正はコーチ・管理者が対応する運用）
-  if (!recentJstDates(3).includes(parsed.data.logDate)) {
-    return { ok: false, error: "入力できるのは直近3日間の記録のみです" };
+  // 選手が入力・修正できるのは「対象日の翌日9:00(JST)」まで。
+  // それ以降の修正はコーチ・管理者が対応する運用。
+  if (!isDailyLogEditable(parsed.data.logDate)) {
+    return { ok: false, error: "この日の記録は修正期限（翌日の朝9時）を過ぎているため入力できません" };
   }
 
   const supabase = await createClient();

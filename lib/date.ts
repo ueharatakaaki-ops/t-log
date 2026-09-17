@@ -24,6 +24,27 @@ export function recentJstDates(n: number): string[] {
   return dates;
 }
 
+// Daily Logの修正締切: 対象日の翌日 何時(JST)まで修正可能か。
+// 「その日の夜に入力→翌朝までは直せる」という運用のため9時にしているが、
+// 運用に応じてここだけ変更すればよい。
+const DAILY_LOG_EDIT_CUTOFF_HOUR_JST = 9;
+
+/**
+ * 指定したDaily Logの対象日(logDate)が、まだ入力・修正可能かどうかを判定する。
+ * 締切は「対象日の翌日 9:00(JST)」。JSTはUTC+9のため、これは
+ * 「翌日の 0:00(UTC)」と等しい時刻になる。
+ * now を渡すとその時刻を基準に判定する（テスト用。省略時は現在時刻）。
+ */
+export function isDailyLogEditable(logDate: string, now: Date = new Date()): boolean {
+  const [y, m, d] = logDate.split("-").map(Number);
+  if (!y || !m || !d) return false;
+  // 締切 = 対象日の翌日 DAILY_LOG_EDIT_CUTOFF_HOUR_JST 時(JST)。
+  // JSTはUTC+9なので、UTCの時刻は「JSTの時刻 - 9」になる（Date.UTCは負数や
+  // 24以上の値も正しく繰り上げ/繰り下げして正規化してくれる）。
+  const cutoffUtcMs = Date.UTC(y, m - 1, d + 1, DAILY_LOG_EDIT_CUTOFF_HOUR_JST - 9, 0, 0);
+  return now.getTime() < cutoffUtcMs;
+}
+
 /**
  * Goal Logのデフォルト対象月（"YYYY-MM"）を計算する。
  * 運用上、月次目標は毎月25日〜月末に「次月分」を入力する想定のため、

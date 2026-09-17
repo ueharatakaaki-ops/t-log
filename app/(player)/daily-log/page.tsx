@@ -1,7 +1,7 @@
 import { DailyLogForm } from "@/components/daily-log/DailyLogForm";
 import { DateChips } from "@/components/daily-log/DateChips";
 import { getTodaysDailyLog } from "./actions";
-import { todayInJst, recentJstDates } from "@/lib/date";
+import { todayInJst, recentJstDates, isDailyLogEditable } from "@/lib/date";
 
 export default async function DailyLogPage({
   searchParams,
@@ -9,7 +9,9 @@ export default async function DailyLogPage({
   searchParams: Promise<{ date?: string }>;
 }) {
   const today = todayInJst();
-  const allowedDates = recentJstDates(3); // [今日, 昨日, 一昨日]
+  // 修正期限（翌日9:00 JST）を過ぎた日はそもそも選べないようにする。
+  // 今日は常に対象、昨日は今日の午前9時より前ならまだ対象になる。
+  const allowedDates = recentJstDates(3).filter((d) => isDailyLogEditable(d));
   const { date } = await searchParams;
   const logDate = date && allowedDates.includes(date) ? date : today;
 

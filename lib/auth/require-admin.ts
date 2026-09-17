@@ -33,3 +33,16 @@ export async function requireAdmin(): Promise<AdminContext> {
 
   return { userId: appUser.id, schoolId: appUser.school_id, role: appUser.role as AdminContext["role"] };
 }
+
+/**
+ * 全スクール横断のデータ（スクール一覧・登録者数集計など）を見られるのは
+ * system_admin のみに限定する。school_admin は自校の管理はできるが、
+ * 他校の登録者数等を見ることはできない。
+ */
+export async function requireSystemAdmin(): Promise<AdminContext> {
+  const admin = await requireAdmin();
+  if (admin.role !== "system_admin") {
+    redirect("/admin/users");
+  }
+  return admin;
+}
