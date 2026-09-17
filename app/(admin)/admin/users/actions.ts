@@ -21,11 +21,20 @@ const coachFieldsSchema = z.object({
   title: z.string().optional().nullable(),
 });
 
+// スクール管理者が実質的にコーチも兼ねるケース（小規模スクールでは一般的）に対応するため、
+// school_admin発行時にも「コーチ業務も兼任するか」を選べるようにする。
+// 兼任する場合は、school_adminとは別にcoachesテーブルの行も作成し、
+// コーチメモの記入等コーチ専用機能が使えるようにする。
+const schoolAdminFieldsSchema = z.object({
+  alsoCoach: z.boolean().optional(),
+  title: z.string().optional().nullable(),
+});
+
 const inviteSchema = z.discriminatedUnion("role", [
   baseSchema.extend({ role: z.literal("player") }).merge(playerFieldsSchema),
   baseSchema.extend({ role: z.literal("coach") }).merge(coachFieldsSchema),
   baseSchema.extend({ role: z.literal("parent") }),
-  baseSchema.extend({ role: z.literal("school_admin") }),
+  baseSchema.extend({ role: z.literal("school_admin") }).merge(schoolAdminFieldsSchema),
 ]);
 
 export type InviteUserInput = z.infer<typeof inviteSchema>;
@@ -98,6 +107,15 @@ export async function inviteUser(input: InviteUserInput): Promise<InviteUserResu
       school_id: admin.schoolId,
     });
     if (error) return { ok: false, error: "保護者プロフィールの作成に失敗しました" };
+  } else if (parsed.data.role === "school_admin" && parsed.data.alsoCoach) {
+    // スクール管理者がコーチ業務も兼任する場合、coachesテーブルにも行を作っておく
+    // （コーチメモ等、coachesテーブルの行を前提とする機能を使えるようにするため）
+    const { error } = await supabaseAdmin.from("coaches").insert({
+      id: newUserId,
+      school_id: admin.schoolId,
+      title: parsed.data.title || null,
+    });
+    if (error) return { ok: false, error: "コーチプロフィール（兼任分）の作成に失敗しました" };
   }
 
   await logAudit({

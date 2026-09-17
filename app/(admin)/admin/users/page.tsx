@@ -38,17 +38,31 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="flex flex-col divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
-        {users.map((u) => (
-          <div key={u.id} className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-semibold text-[#0F2537]">{u.displayName}</p>
-              <p className="text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("ja-JP")} 登録</p>
+        {users.map((u) => {
+          // コーチ・スクール管理者はロール変更画面を開けるようにする
+          // （選手・保護者・システム管理者は今のところ編集画面がないため通常表示のみ）
+          const editable = u.role === "coach" || u.role === "school_admin";
+          const content = (
+            <>
+              <div>
+                <p className="font-semibold text-[#0F2537]">{u.displayName}</p>
+                <p className="text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("ja-JP")} 登録</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {ROLE_LABEL[u.role] ?? u.role}
+              </span>
+            </>
+          );
+          return editable ? (
+            <Link key={u.id} href={`/admin/users/${u.id}`} className="flex items-center justify-between p-4 active:bg-[#F4F6F8]">
+              {content}
+            </Link>
+          ) : (
+            <div key={u.id} className="flex items-center justify-between p-4">
+              {content}
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              {ROLE_LABEL[u.role] ?? u.role}
-            </span>
-          </div>
-        ))}
+          );
+        })}
         {users.length === 0 && <p className="p-4 text-sm text-slate-400">まだユーザーがいません</p>}
       </div>
 

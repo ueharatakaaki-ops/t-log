@@ -20,6 +20,7 @@ export function InviteUserForm() {
   const [displayName, setDisplayName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [title, setTitle] = useState("");
+  const [alsoCoach, setAlsoCoach] = useState(false);
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +40,8 @@ export function InviteUserForm() {
         };
       } else if (role === "coach") {
         input = { role, email, displayName, title: title || null };
+      } else if (role === "school_admin") {
+        input = { role, email, displayName, alsoCoach, title: alsoCoach ? title || null : null };
       } else {
         input = { role, email, displayName };
       }
@@ -81,6 +84,23 @@ export function InviteUserForm() {
 
       {role === "coach" && (
         <TextField label="役職" value={title} onChange={setTitle} placeholder="例: ヘッドコーチ" />
+      )}
+
+      {role === "school_admin" && (
+        <>
+          <SingleChoiceChips
+            label="コーチ業務も兼任しますか？"
+            options={[
+              { value: "no", label: "兼任しない" },
+              { value: "yes", label: "兼任する" },
+            ]}
+            value={alsoCoach ? "yes" : "no"}
+            onChange={(v) => setAlsoCoach(v === "yes")}
+          />
+          {alsoCoach && (
+            <TextField label="役職" value={title} onChange={setTitle} placeholder="例: ヘッドコーチ" />
+          )}
+        </>
       )}
 
       {error && <p className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</p>}
