@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 // このアプリは「静的なマーケティングページ」を一切持たず、全ページが
@@ -14,6 +14,11 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "t-log",
   description: "NLTC Junior Team コンディション管理アプリ",
+};
+
+// スマホのブラウザ上部バー（アドレスバー等）の色をブランドカラーに合わせる
+export const viewport: Viewport = {
+  themeColor: "#0F2537",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

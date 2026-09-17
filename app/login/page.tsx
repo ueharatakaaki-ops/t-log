@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 // 招待リンクが無効・期限切れ、または既に使用済みだった場合に
@@ -18,6 +19,14 @@ export default async function LoginPage({
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#F4F6F8] px-4">
       <div className="w-full max-w-sm">
+        <Image
+          src="/logo.png"
+          alt="t-log"
+          width={64}
+          height={64}
+          className="mx-auto mb-3 h-16 w-16 rounded-2xl"
+          priority
+        />
         <h1 className="mb-1 text-center text-2xl font-bold text-[#0F2537]">t-log</h1>
         <p className="mb-8 text-center text-sm text-slate-500">NLTC Junior Team</p>
 
