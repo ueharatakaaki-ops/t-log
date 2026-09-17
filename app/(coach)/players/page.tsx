@@ -2,17 +2,23 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth/require-staff";
 import { getPlayerList } from "@/lib/queries/player-list";
 import { PlayerListTable } from "@/components/coach/PlayerListTable";
+import type { SchoolGradeStage } from "@/lib/date";
 
-const CATEGORIES = ["U12", "U14", "U15", "U18"];
+const STAGES: { value: SchoolGradeStage; label: string }[] = [
+  { value: "elementary", label: "小学生" },
+  { value: "junior_high", label: "中学生" },
+  { value: "high_school", label: "高校生" },
+];
 
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ stage?: string }>;
 }) {
   const staff = await requireStaff();
-  const { category } = await searchParams;
-  const players = await getPlayerList(staff.schoolId, { category });
+  const { stage } = await searchParams;
+  const validStage = STAGES.find((s) => s.value === stage)?.value;
+  const players = await getPlayerList(staff.schoolId, { stage: validStage });
 
   return (
     <main className="min-h-screen bg-[#F4F6F8] px-4 pt-6 pb-10">
@@ -22,20 +28,20 @@ export default async function PlayersPage({
         <Link
           href="/players"
           className={`h-9 rounded-full px-3 text-sm font-semibold leading-9 ${
-            !category ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600"
+            !validStage ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600"
           }`}
         >
           すべて
         </Link>
-        {CATEGORIES.map((c) => (
+        {STAGES.map((s) => (
           <Link
-            key={c}
-            href={`/players?category=${c}`}
+            key={s.value}
+            href={`/players?stage=${s.value}`}
             className={`h-9 rounded-full px-3 text-sm font-semibold leading-9 ${
-              category === c ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600"
+              validStage === s.value ? "bg-[#0F2537] text-white" : "bg-slate-100 text-slate-600"
             }`}
           >
-            {c}
+            {s.label}
           </Link>
         ))}
       </div>

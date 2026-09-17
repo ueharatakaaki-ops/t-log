@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { computeSchoolGrade } from "@/lib/date";
 import { computeMonthlySummaryStats } from "@/lib/reports/compute-summary-stats";
 import { calculateAge } from "@/lib/reports/age-commentary";
 import { generateReportNarrative, type NarrativeMatch, type NarrativeDailyNote } from "@/lib/reports/generate-narrative";
@@ -102,7 +103,7 @@ async function tryFillNarrative(
 ): Promise<NarrativeGenerationStatus> {
   try {
     const [player, dailyLogs, matchLogs, previousReport] = await Promise.all([
-      admin.from("players").select("full_name, birthdate, grade, category").eq("id", playerId).single(),
+      admin.from("players").select("full_name, birthdate").eq("id", playerId).single(),
       admin
         .from("daily_logs")
         .select("log_date, self_score, fatigue_level, has_pain, pain_locations, notes")
@@ -162,8 +163,7 @@ async function tryFillNarrative(
     const result = await generateReportNarrative({
       playerName: player.data.full_name,
       age: calculateAge(player.data.birthdate),
-      grade: player.data.grade,
-      category: player.data.category,
+      grade: computeSchoolGrade(player.data.birthdate, targetMonth)?.label ?? null,
       targetMonth,
       stats,
       dailyNotes,

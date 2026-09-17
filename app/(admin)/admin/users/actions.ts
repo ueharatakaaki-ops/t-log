@@ -12,9 +12,9 @@ const baseSchema = z.object({
 });
 
 const playerFieldsSchema = z.object({
-  birthdate: z.string().optional().nullable(),
-  grade: z.string().optional().nullable(),
-  category: z.enum(["U12", "U14", "U15", "U18"]).optional().nullable(),
+  // 学年（小学◯年・中学◯年・高校◯年）は生年月日から自動計算するため、
+  // カテゴリー(U12等)・学年の手入力は廃止し、生年月日を必須にした
+  birthdate: z.string().min(1, "生年月日を入力してください"),
 });
 
 const coachFieldsSchema = z.object({
@@ -82,9 +82,7 @@ export async function inviteUser(input: InviteUserInput): Promise<InviteUserResu
       id: newUserId,
       school_id: admin.schoolId,
       full_name: parsed.data.displayName,
-      birthdate: parsed.data.birthdate || null,
-      grade: parsed.data.grade || null,
-      category: parsed.data.category || null,
+      birthdate: parsed.data.birthdate,
     });
     if (error) return { ok: false, error: "選手プロフィールの作成に失敗しました" };
   } else if (parsed.data.role === "coach") {

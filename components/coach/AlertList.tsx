@@ -24,7 +24,7 @@ export function AlertList({ rows }: { rows: PlayerAlertRow[] }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-[#0F2537]">{row.fullName}</span>
-                {row.category && <span className="text-xs text-slate-400">{row.category}</span>}
+                {row.gradeLabel && <span className="text-xs text-slate-400">{row.gradeLabel}</span>}
               </div>
               {row.hasSubmittedToday ? (
                 <p className="mt-1 text-sm text-slate-600">

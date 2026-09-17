@@ -26,7 +26,7 @@ export default async function PlayerDetailPage({
       <div className="mb-6">
         <h1 className="text-xl font-bold text-[#0F2537]">{profile.fullName}</h1>
         <p className="text-sm text-slate-500">
-          {profile.category ?? "-"} {profile.grade ? `／ ${profile.grade}` : ""}
+          {profile.gradeLabel ?? "-"}
           {profile.status !== "active" && (
             <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-xs">
               {profile.status === "graduated" ? "卒業" : "退会"}

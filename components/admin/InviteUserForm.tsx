@@ -13,25 +13,18 @@ const ROLES = [
   { value: "school_admin", label: "スクール管理者" },
 ];
 
-const CATEGORIES = [
-  { value: "U12", label: "U12" },
-  { value: "U14", label: "U14" },
-  { value: "U15", label: "U15" },
-  { value: "U18", label: "U18" },
-];
-
 export function InviteUserForm() {
   const router = useRouter();
   const [role, setRole] = useState<InviteUserInput["role"]>("player");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [birthdate, setBirthdate] = useState("");
-  const [grade, setGrade] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
   const [title, setTitle] = useState("");
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  const canSubmitPlayer = role !== "player" || !!birthdate;
 
   function handleSubmit() {
     setError(null);
@@ -42,9 +35,7 @@ export function InviteUserForm() {
           role,
           email,
           displayName,
-          birthdate: birthdate || null,
-          grade: grade || null,
-          category: (category as "U12" | "U14" | "U15" | "U18" | null) ?? null,
+          birthdate,
         };
       } else if (role === "coach") {
         input = { role, email, displayName, title: title || null };
@@ -74,19 +65,18 @@ export function InviteUserForm() {
       <TextField label="メールアドレス（招待先）" value={email} onChange={setEmail} required placeholder="example@nltc.jp" />
 
       {role === "player" && (
-        <>
-          <div>
-            <span className="mb-2 block text-base font-semibold text-[#0F2537]">生年月日</span>
-            <input
-              type="date"
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537] outline-none focus:border-[#0F2537]"
-            />
-          </div>
-          <TextField label="学年" value={grade} onChange={setGrade} placeholder="例: 高2" />
-          <SingleChoiceChips label="カテゴリー" options={CATEGORIES} value={category} onChange={setCategory} />
-        </>
+        <div>
+          <span className="mb-2 block text-base font-semibold text-[#0F2537]">
+            生年月日 <span className="text-rose-500">*</span>
+          </span>
+          <input
+            type="date"
+            value={birthdate}
+            onChange={(e) => setBirthdate(e.target.value)}
+            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537] outline-none focus:border-[#0F2537]"
+          />
+          <p className="mt-1 text-xs text-slate-400">学年（小学◯年・中学◯年・高校◯年）は生年月日から自動計算されます</p>
+        </div>
       )}
 
       {role === "coach" && (
@@ -97,7 +87,7 @@ export function InviteUserForm() {
 
       <button
         type="button"
-        disabled={!email || !displayName || isPending}
+        disabled={!email || !displayName || !canSubmitPlayer || isPending}
         onClick={handleSubmit}
         className="h-12 rounded-xl bg-[#0F2537] text-base font-bold text-white disabled:bg-slate-200 disabled:text-slate-400"
       >

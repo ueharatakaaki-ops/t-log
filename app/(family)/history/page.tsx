@@ -55,7 +55,7 @@ export default async function FamilyHistoryPage() {
           >
             <div>
               <p className="font-semibold text-[#0F2537]">{child.fullName}</p>
-              <p className="text-xs text-slate-400">{child.category ?? "-"}</p>
+              <p className="text-xs text-slate-400">{child.gradeLabel ?? "-"}</p>
             </div>
             <span className="text-slate-300">›</span>
           </Link>

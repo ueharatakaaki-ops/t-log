@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import { todayInJst } from "@/lib/date";
+import { todayInJst, computeSchoolGrade } from "@/lib/date";
 
 export type AlertLevel = "red" | "yellow" | "none";
 
 export type PlayerAlertRow = {
   playerId: string;
   fullName: string;
-  category: string | null;
+  gradeLabel: string | null;
   hasSubmittedToday: boolean;
   alertLevel: AlertLevel;
   fatigueLevel: number | null;
@@ -31,7 +31,7 @@ export async function getTodaysAlerts(schoolId: string): Promise<{
 
   const { data: players } = await supabase
     .from("players")
-    .select("id, full_name, category")
+    .select("id, full_name, birthdate")
     .eq("school_id", schoolId)
     .eq("status", "active")
     .order("full_name");
@@ -57,7 +57,7 @@ export async function getTodaysAlerts(schoolId: string): Promise<{
     return {
       playerId: p.id,
       fullName: p.full_name,
-      category: p.category,
+      gradeLabel: computeSchoolGrade(p.birthdate)?.label ?? null,
       hasSubmittedToday: !!log,
       alertLevel,
       fatigueLevel: log?.fatigue_level ?? null,

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeSchoolGrade } from "@/lib/date";
 
 export type PublishedReportRow = {
   id: string;
@@ -27,7 +28,7 @@ export async function getPublishedReports(playerId: string): Promise<PublishedRe
 export type ChildProfile = {
   id: string;
   fullName: string;
-  category: string | null;
+  gradeLabel: string | null;
 };
 
 /** 保護者が閲覧できる子どもの一覧を取得する */
@@ -37,9 +38,13 @@ export async function getChildProfiles(childPlayerIds: string[]): Promise<ChildP
 
   const { data } = await supabase
     .from("players")
-    .select("id, full_name, category")
+    .select("id, full_name, birthdate")
     .in("id", childPlayerIds)
     .order("full_name");
 
-  return (data ?? []).map((p) => ({ id: p.id, fullName: p.full_name, category: p.category }));
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    fullName: p.full_name,
+    gradeLabel: computeSchoolGrade(p.birthdate)?.label ?? null,
+  }));
 }

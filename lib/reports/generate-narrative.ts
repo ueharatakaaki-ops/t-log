@@ -46,7 +46,6 @@ export type NarrativeInput = {
   playerName: string;
   age: number | null;
   grade: string | null;
-  category: string | null;
   targetMonth: string; // "YYYY-MM-01"
   stats: MonthlyReportSummaryStats;
   dailyNotes: NarrativeDailyNote[];
@@ -143,7 +142,7 @@ export async function generateReportNarrative(input: NarrativeInput): Promise<Na
 }
 
 function buildPrompt(input: NarrativeInput): string {
-  const { playerName, age, grade, category, targetMonth, stats } = input;
+  const { playerName, age, grade, targetMonth, stats } = input;
   const monthLabel = `${Number(targetMonth.slice(5, 7))}月`;
 
   const dailyNotesText =
@@ -184,7 +183,6 @@ function buildPrompt(input: NarrativeInput): string {
 # 選手情報
 - 氏名: ${playerName}
 - 年齢/学年: ${age !== null ? `満${age}歳` : "不明"} ${grade ?? ""}
-- カテゴリ: ${category ?? "不明"}
 - 対象月: ${monthLabel}（${targetMonth.slice(0, 7)}）
 
 # 今月の客観的集計データ

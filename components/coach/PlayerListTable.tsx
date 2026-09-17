@@ -25,9 +25,7 @@ export function PlayerListTable({ players }: { players: PlayerListRow[] }) {
             <span className={`h-2.5 w-2.5 rounded-full ${ALERT_DOT[p.todayAlert]}`} />
             <div>
               <p className="font-semibold text-[#0F2537]">{p.fullName}</p>
-              <p className="text-xs text-slate-400">
-                {p.category ?? "-"} {p.grade ? `／ ${p.grade}` : ""}
-              </p>
+              <p className="text-xs text-slate-400">{p.gradeLabel ?? "-"}</p>
             </div>
           </div>
           <span className="text-slate-300">›</span>

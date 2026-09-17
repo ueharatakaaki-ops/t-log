@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeSchoolGrade } from "@/lib/date";
 import type { MonthlyReportSummaryStats } from "@/lib/reports/compute-summary-stats";
 
 export type MonthlyReportDetail = {
@@ -6,8 +7,7 @@ export type MonthlyReportDetail = {
   playerId: string;
   playerName: string;
   birthdate: string | null;
-  grade: string | null;
-  category: string | null;
+  gradeLabel: string | null; // 対象月時点での学年（生年月日から自動計算）
   targetMonth: string;
   status: "draft" | "reviewed" | "published";
   summaryStats: MonthlyReportSummaryStats | null;
@@ -29,7 +29,7 @@ export async function getMonthlyReport(reportId: string): Promise<MonthlyReportD
       `id, player_id, target_month, status, summary_stats, connect_text,
        technical_evaluation, mental_evaluation, agreed_theme, agreed_notes,
        pdf_path, published_at,
-       players ( full_name, birthdate, grade, category )`
+       players ( full_name, birthdate )`
     )
     .eq("id", reportId)
     .maybeSingle();
@@ -44,8 +44,9 @@ export async function getMonthlyReport(reportId: string): Promise<MonthlyReportD
     playerId: data.player_id,
     playerName: player?.full_name ?? "",
     birthdate: player?.birthdate ?? null,
-    grade: player?.grade ?? null,
-    category: player?.category ?? null,
+    // 対象月時点の学年を計算する（レポートは後から見返すものなので「今の学年」ではなく
+    // その対象月における学年を表示するのが正確）
+    gradeLabel: computeSchoolGrade(player?.birthdate ?? null, data.target_month)?.label ?? null,
     targetMonth: data.target_month,
     status: data.status,
     summaryStats: data.summary_stats as MonthlyReportSummaryStats | null,

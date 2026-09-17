@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeSchoolGrade } from "@/lib/date";
 
 export type PlayerProfile = {
   id: string;
   fullName: string;
   birthdate: string | null;
-  grade: string | null;
-  category: string | null;
+  gradeLabel: string | null; // 生年月日から自動計算した学年（例: "中学2年"）
   status: string;
 };
 
@@ -89,7 +89,7 @@ export async function getPlayerDetail(playerId: string) {
 
   const { data: player } = await supabase
     .from("players")
-    .select("id, full_name, birthdate, grade, category, status")
+    .select("id, full_name, birthdate, status")
     .eq("id", playerId)
     .maybeSingle();
 
@@ -138,8 +138,7 @@ export async function getPlayerDetail(playerId: string) {
     id: player.id,
     fullName: player.full_name,
     birthdate: player.birthdate,
-    grade: player.grade,
-    category: player.category,
+    gradeLabel: computeSchoolGrade(player.birthdate)?.label ?? null,
     status: player.status,
   };
 
