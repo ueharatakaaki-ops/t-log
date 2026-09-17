@@ -14,6 +14,13 @@ export default async function AdminUsersPage() {
   const admin = await requireAdmin();
   const users = await getSchoolUsers(admin.schoolId);
 
+  // ロール別の登録人数（「コーチが今何人いるか」等がひと目で分かるように）
+  const counts = users.reduce<Record<string, number>>((acc, u) => {
+    acc[u.role] = (acc[u.role] ?? 0) + 1;
+    return acc;
+  }, {});
+  const adminCount = (counts.school_admin ?? 0) + (counts.system_admin ?? 0);
+
   return (
     <main className="min-h-screen bg-[#F4F6F8] px-4 pt-6 pb-10">
       <div className="mb-4 flex items-center justify-between">
@@ -21,6 +28,13 @@ export default async function AdminUsersPage() {
         <Link href="/admin/users/invite" className="h-9 rounded-lg bg-[#0F2537] px-4 text-sm font-semibold leading-9 text-white">
           招待する
         </Link>
+      </div>
+
+      <div className="mb-4 grid grid-cols-4 gap-2 text-center">
+        <CountCell label="選手" value={counts.player ?? 0} />
+        <CountCell label="コーチ" value={counts.coach ?? 0} />
+        <CountCell label="保護者" value={counts.parent ?? 0} />
+        <CountCell label="管理者" value={adminCount} />
       </div>
 
       <div className="flex flex-col divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
@@ -42,5 +56,14 @@ export default async function AdminUsersPage() {
         選手⇔保護者／コーチの紐付け管理へ →
       </Link>
     </main>
+  );
+}
+
+function CountCell({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-white py-2">
+      <p className="text-lg font-bold text-[#0F2537]">{value}</p>
+      <p className="text-xs text-slate-500">{label}</p>
+    </div>
   );
 }

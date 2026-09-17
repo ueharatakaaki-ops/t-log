@@ -10,6 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/users", label: "ユーザー管理" },
     { href: "/admin/links", label: "紐付け管理" },
     ...(admin.role === "system_admin" ? [{ href: "/admin/schools", label: "スクール一覧" }] : []),
+    { href: "/dashboard", label: "コーチ画面" },
   ];
 
   return (
