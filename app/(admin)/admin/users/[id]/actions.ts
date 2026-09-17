@@ -96,3 +96,60 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<Upda
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
 }
+
+const updatePlayerBirthdateSchema = z.object({
+  userId: z.string().uuid(),
+  birthdate: z.string().min(1, "生年月日を入力してください"),
+});
+
+export type UpdatePlayerBirthdateInput = z.infer<typeof updatePlayerBirthdateSchema>;
+export type UpdatePlayerBirthdateResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * 選手の生年月日をスクール管理者/コーチが訂正する。
+ *
+ * 生年月日は原則として選手本人が初回ログイン時に入力するが(app/onboarding/birthdate)、
+ * 本人の入力ミスや、招待前からの移行データで誤りがあった場合に備えて、
+ * staff側からも訂正できるようにしておく。
+ */
+export async function updatePlayerBirthdate(
+  input: UpdatePlayerBirthdateInput
+): Promise<UpdatePlayerBirthdateResult> {
+  const parsed = updatePlayerBirthdateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "入力内容を確認してください" };
+  }
+
+  const admin = await requireAdmin();
+  const supabaseAdmin = createAdminClient();
+
+  const { data: target } = await supabaseAdmin
+    .from("app_users")
+    .select("id, school_id, role")
+    .eq("id", parsed.data.userId)
+    .maybeSingle();
+
+  if (!target || target.school_id !== admin.schoolId || target.role !== "player") {
+    return { ok: false, error: "対象の選手が見つかりません" };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("players")
+    .update({ birthdate: parsed.data.birthdate })
+    .eq("id", parsed.data.userId);
+
+  if (error) {
+    return { ok: false, error: "生年月日の更新に失敗しました" };
+  }
+
+  await logAudit({
+    schoolId: admin.schoolId,
+    actorId: admin.userId,
+    action: "update",
+    targetTable: "players",
+    targetId: parsed.data.userId,
+  });
+
+  revalidatePath(`/admin/users/${parsed.data.userId}`);
+  return { ok: true };
+}

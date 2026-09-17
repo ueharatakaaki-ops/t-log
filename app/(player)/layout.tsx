@@ -1,7 +1,28 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { PLAYER_NAV_ITEMS } from "@/lib/nav/player-nav";
 
-export default function PlayerLayout({ children }: { children: React.ReactNode }) {
+export default async function PlayerLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: player } = await supabase
+      .from("players")
+      .select("birthdate")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    // 生年月日が未入力（招待時に代理入力せず本人入力へ移行したため）の選手は、
+    // 学年計算に必要な生年月日を先に入力してもらう
+    if (player && !player.birthdate) {
+      redirect("/onboarding/birthdate");
+    }
+  }
+
   return (
     <>
       <div className="pb-16">{children}</div>

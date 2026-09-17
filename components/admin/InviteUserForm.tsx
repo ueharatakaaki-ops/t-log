@@ -18,27 +18,17 @@ export function InviteUserForm() {
   const [role, setRole] = useState<InviteUserInput["role"]>("player");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [birthdate, setBirthdate] = useState("");
   const [title, setTitle] = useState("");
   const [alsoCoach, setAlsoCoach] = useState(false);
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmitPlayer = role !== "player" || !!birthdate;
-
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
       let input: InviteUserInput;
-      if (role === "player") {
-        input = {
-          role,
-          email,
-          displayName,
-          birthdate,
-        };
-      } else if (role === "coach") {
+      if (role === "coach") {
         input = { role, email, displayName, title: title || null };
       } else if (role === "school_admin") {
         input = { role, email, displayName, alsoCoach, title: alsoCoach ? title || null : null };
@@ -68,18 +58,9 @@ export function InviteUserForm() {
       <TextField label="メールアドレス（招待先）" value={email} onChange={setEmail} required placeholder="example@nltc.jp" />
 
       {role === "player" && (
-        <div>
-          <span className="mb-2 block text-base font-semibold text-[#0F2537]">
-            生年月日 <span className="text-rose-500">*</span>
-          </span>
-          <input
-            type="date"
-            value={birthdate}
-            onChange={(e) => setBirthdate(e.target.value)}
-            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-[#0F2537] outline-none focus:border-[#0F2537]"
-          />
-          <p className="mt-1 text-xs text-slate-400">学年（小学◯年・中学◯年・高校◯年）は生年月日から自動計算されます</p>
-        </div>
+        <p className="rounded-xl bg-slate-100 p-3 text-xs leading-relaxed text-slate-500">
+          生年月日はここでは入力しません。招待メールを受け取った選手本人が、初回ログイン時に自分で入力します（学年はそこから自動計算されます）。
+        </p>
       )}
 
       {role === "coach" && (
@@ -107,7 +88,7 @@ export function InviteUserForm() {
 
       <button
         type="button"
-        disabled={!email || !displayName || !canSubmitPlayer || isPending}
+        disabled={!email || !displayName || isPending}
         onClick={handleSubmit}
         className="h-12 rounded-xl bg-[#0F2537] text-base font-bold text-white disabled:bg-slate-200 disabled:text-slate-400"
       >

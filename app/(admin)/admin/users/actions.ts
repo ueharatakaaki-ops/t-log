@@ -11,12 +11,6 @@ const baseSchema = z.object({
   displayName: z.string().min(1, "氏名を入力してください").max(200),
 });
 
-const playerFieldsSchema = z.object({
-  // 学年（小学◯年・中学◯年・高校◯年）は生年月日から自動計算するため、
-  // カテゴリー(U12等)・学年の手入力は廃止し、生年月日を必須にした
-  birthdate: z.string().min(1, "生年月日を入力してください"),
-});
-
 const coachFieldsSchema = z.object({
   title: z.string().optional().nullable(),
 });
@@ -31,7 +25,10 @@ const schoolAdminFieldsSchema = z.object({
 });
 
 const inviteSchema = z.discriminatedUnion("role", [
-  baseSchema.extend({ role: z.literal("player") }).merge(playerFieldsSchema),
+  // 生年月日はスクール管理者/コーチによる代理入力だと誤りが起きやすいため、
+  // 招待時には求めず、選手本人が初回ログイン時に入力する方式にした
+  // (app/onboarding/birthdate 参照)
+  baseSchema.extend({ role: z.literal("player") }),
   baseSchema.extend({ role: z.literal("coach") }).merge(coachFieldsSchema),
   baseSchema.extend({ role: z.literal("parent") }),
   baseSchema.extend({ role: z.literal("school_admin") }).merge(schoolAdminFieldsSchema),
@@ -87,11 +84,13 @@ export async function inviteUser(input: InviteUserInput): Promise<InviteUserResu
   }
 
   if (parsed.data.role === "player") {
+    // 生年月日はここでは設定しない(null)。選手本人が初回ログイン時の
+    // オンボーディング画面(/onboarding/birthdate)で入力するまでは
+    // 学年は「未設定」として扱われる
     const { error } = await supabaseAdmin.from("players").insert({
       id: newUserId,
       school_id: admin.schoolId,
       full_name: parsed.data.displayName,
-      birthdate: parsed.data.birthdate,
     });
     if (error) return { ok: false, error: "選手プロフィールの作成に失敗しました" };
   } else if (parsed.data.role === "coach") {

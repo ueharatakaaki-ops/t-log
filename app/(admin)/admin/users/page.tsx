@@ -39,18 +39,25 @@ export default async function AdminUsersPage() {
 
       <div className="flex flex-col divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
         {users.map((u) => {
-          // コーチ・スクール管理者はロール変更画面を開けるようにする
-          // （選手・保護者・システム管理者は今のところ編集画面がないため通常表示のみ）
-          const editable = u.role === "coach" || u.role === "school_admin";
+          // コーチ・スクール管理者はロール変更画面、選手は生年月日の訂正画面を開けるようにする
+          // （保護者・システム管理者は今のところ編集画面がないため通常表示のみ）
+          const editable = u.role === "coach" || u.role === "school_admin" || u.role === "player";
           const content = (
             <>
               <div>
                 <p className="font-semibold text-[#0F2537]">{u.displayName}</p>
                 <p className="text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("ja-JP")} 登録</p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                {ROLE_LABEL[u.role] ?? u.role}
-              </span>
+              <div className="flex items-center gap-2">
+                {u.birthdateMissing && (
+                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                    生年月日未入力
+                  </span>
+                )}
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  {ROLE_LABEL[u.role] ?? u.role}
+                </span>
+              </div>
             </>
           );
           return editable ? (
