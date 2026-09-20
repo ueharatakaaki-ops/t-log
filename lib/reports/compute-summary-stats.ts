@@ -7,7 +7,13 @@ export type MonthlyReportSummaryStats = {
   avgFatigueLevel: number | null; // 平均疲労度
   avgSelfScore: number | null;
   painDays: { date: string; locations: string[] }[]; // 痛み履歴
-  dailySeries: { date: string; sleepHours: number | null; fatigueLevel: number | null }[]; // グラフ用
+  dailySeries: {
+    date: string;
+    sleepHours: number | null;
+    fatigueLevel: number | null;
+    hasPractice: boolean | null;
+    practiceIntensity: number | null;
+  }[]; // グラフ用
   goodBadTrend: { good: string[]; bad: string[] }; // Match Logからの良かった点/課題の抜粋
 };
 
@@ -25,7 +31,7 @@ export async function computeStatsForRange(
 
   const { data: dailyLogs } = await supabase
     .from("daily_logs")
-    .select("log_date, sleep_hours, fatigue_level, self_score, has_pain, pain_locations")
+    .select("log_date, sleep_hours, fatigue_level, self_score, has_pain, pain_locations, has_practice, practice_intensity")
     .eq("player_id", playerId)
     .gte("log_date", startDate)
     .lt("log_date", endDateExclusive)
@@ -63,6 +69,8 @@ export async function computeStatsForRange(
       date: l.log_date,
       sleepHours: l.sleep_hours,
       fatigueLevel: l.fatigue_level,
+      hasPractice: l.has_practice,
+      practiceIntensity: l.practice_intensity,
     })),
     goodBadTrend: {
       good: matches.map((m) => m.good_points).filter((v): v is string => !!v),

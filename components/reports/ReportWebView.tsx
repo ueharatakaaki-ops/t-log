@@ -36,6 +36,8 @@ export function ReportWebView({
     selfScore: null,
     hasPain: false,
     painLocations: [] as string[],
+    hasPractice: d.hasPractice,
+    practiceIntensity: d.practiceIntensity,
     notes: null,
     likedByCoach: false,
   }));
