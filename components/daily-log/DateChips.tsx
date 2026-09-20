@@ -18,25 +18,35 @@ export function DateChips({
   dates,
   selected,
   today,
+  enteredDates,
 }: {
   dates: string[];
   selected: string;
   today: string;
+  // 指定すると、まだ記録がない日に「未入力」の目印を出す
+  // （書き忘れに気づきやすくするため）
+  enteredDates?: Set<string>;
 }) {
   return (
-    <div className="mb-4 flex gap-2.5">
+    <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
       {dates.map((d) => {
         const isSelected = d === selected;
+        const isMissing = enteredDates ? !enteredDates.has(d) && d !== today : false;
         return (
           <Link
             key={d}
             href={`/daily-log?date=${d}`}
             className={[
-              "h-12 flex-1 rounded-xl text-center text-base font-semibold leading-[3rem]",
+              "flex h-14 w-16 flex-shrink-0 flex-col items-center justify-center rounded-xl text-center text-sm font-semibold",
               isSelected ? "bg-[#0F2537] text-white" : "border border-slate-300 bg-white text-slate-600",
             ].join(" ")}
           >
-            {formatShort(d, today)}
+            <span>{formatShort(d, today)}</span>
+            {isMissing && (
+              <span className={["mt-0.5 text-[10px] font-normal", isSelected ? "text-slate-300" : "text-amber-600"].join(" ")}>
+                未入力
+              </span>
+            )}
           </Link>
         );
       })}

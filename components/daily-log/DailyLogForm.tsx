@@ -11,6 +11,7 @@ import { dailyLogSchema } from "@/lib/validations/daily-log";
 
 type DailyLogFormProps = {
   logDate: string; // "YYYY-MM-DD"（対象日はサーバー側で固定して渡す。選手が任意の日付を選べる必要はない）
+  isToday?: boolean; // 送信完了メッセージの文言出し分け用（未入力日の後日入力にも対応したため）
   initial?: {
     sleepHours: number | null;
     fatigueLevel: number | null;
@@ -25,7 +26,7 @@ type DailyLogFormProps = {
 
 const DRAFT_KEY_PREFIX = "t-log:daily-log-draft:";
 
-export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
+export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormProps) {
   const [sleepHours, setSleepHours] = useState<number | null>(initial?.sleepHours ?? null);
   const [fatigueLevel, setFatigueLevel] = useState<number | null>(initial?.fatigueLevel ?? null);
   const [hasPain, setHasPain] = useState<boolean | null>(initial?.hasPain ?? null);
@@ -144,7 +145,7 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#00A859] text-3xl text-white">
           ✓
         </div>
-        <p className="text-lg font-bold text-[#0F2537]">今日の記録を送信しました</p>
+        <p className="text-lg font-bold text-[#0F2537]">{isToday ? "今日の記録を送信しました" : "この日の記録を送信しました"}</p>
         <p className="text-sm text-slate-500">おつかれさま。また明日も入力しよう。</p>
       </div>
     );

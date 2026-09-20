@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { dailyLogSchema, type DailyLogInput } from "@/lib/validations/daily-log";
-import { isDailyLogEditable } from "@/lib/date";
+import { isDailyLogEditable, todayInJst } from "@/lib/date";
 
 export type SubmitDailyLogResult =
   | { ok: true }
@@ -19,10 +19,10 @@ export async function submitDailyLog(input: DailyLogInput): Promise<SubmitDailyL
     };
   }
 
-  // 選手が入力・修正できるのは「対象日の翌日9:00(JST)」まで。
-  // それ以降の修正はコーチ・管理者が対応する運用。
-  if (!isDailyLogEditable(parsed.data.logDate)) {
-    return { ok: false, error: "この日の記録は修正期限（翌日の朝9時）を過ぎているため入力できません" };
+  const d = parsed.data;
+
+  if (d.logDate > todayInJst()) {
+    return { ok: false, error: "未来の日付は記録できません" };
   }
 
   const supabase = await createClient();
@@ -45,7 +45,19 @@ export async function submitDailyLog(input: DailyLogInput): Promise<SubmitDailyL
     return { ok: false, error: "選手アカウントでログインしてください" };
   }
 
-  const d = parsed.data;
+  // 「まだ記録がない日」は、書き忘れの救済のため期限を過ぎていてもいつでも入力できる。
+  // 一方「既に記録済みの日」を後から書き換えるのは、これまで通り
+  // 「対象日の翌日9:00(JST)」までに制限する（コーチが見た後の後出し修正を防ぐため）。
+  const { data: existingLog } = await supabase
+    .from("daily_logs")
+    .select("id")
+    .eq("player_id", appUser.id)
+    .eq("log_date", d.logDate)
+    .maybeSingle();
+
+  if (existingLog && !isDailyLogEditable(d.logDate)) {
+    return { ok: false, error: "この日の記録は修正期限（翌日の朝9時）を過ぎているため修正できません" };
+  }
 
   // player_id + log_date のUNIQUE制約を利用し、当日分は upsert（未入力→入力後の修正にも対応）
   const { error } = await supabase.from("daily_logs").upsert(
@@ -93,4 +105,26 @@ export async function getTodaysDailyLog(logDate: string) {
     .maybeSingle();
 
   return data;
+}
+
+// 直近の候補日のうち、既に記録がある日を判定するための一覧取得。
+// 「未入力の日はいつでも入力できる」ようにするため、日付選択チップ側で
+// 「記録済み（修正期限あり）」か「未入力（期限なく入力可）」かを出し分けるのに使う。
+export async function getExistingDailyLogDates(dates: string[]): Promise<Set<string>> {
+  if (dates.length === 0) return new Set();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return new Set();
+
+  const { data } = await supabase
+    .from("daily_logs")
+    .select("log_date")
+    .eq("player_id", user.id)
+    .in("log_date", dates);
+
+  return new Set((data ?? []).map((row) => row.log_date as string));
 }

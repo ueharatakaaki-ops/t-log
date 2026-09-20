@@ -1,6 +1,6 @@
 import { DailyLogForm } from "@/components/daily-log/DailyLogForm";
 import { DateChips } from "@/components/daily-log/DateChips";
-import { getTodaysDailyLog } from "./actions";
+import { getTodaysDailyLog, getExistingDailyLogDates } from "./actions";
 import { todayInJst, recentJstDates, isDailyLogEditable } from "@/lib/date";
 
 export default async function DailyLogPage({
@@ -9,9 +9,12 @@ export default async function DailyLogPage({
   searchParams: Promise<{ date?: string }>;
 }) {
   const today = todayInJst();
-  // 修正期限（翌日9:00 JST）を過ぎた日はそもそも選べないようにする。
-  // 今日は常に対象、昨日は今日の午前9時より前ならまだ対象になる。
-  const allowedDates = recentJstDates(3).filter((d) => isDailyLogEditable(d));
+  // 直近1週間ぶんを候補にする。
+  // 「記録済みの日」は修正期限（翌日9:00 JST）を過ぎたら選べなくする（後出しの書き換え防止）が、
+  // 「まだ記録がない日」は書き忘れの救済のため、期限を過ぎていても選べるようにする。
+  const candidateDates = recentJstDates(7);
+  const existingDates = await getExistingDailyLogDates(candidateDates);
+  const allowedDates = candidateDates.filter((d) => !existingDates.has(d) || isDailyLogEditable(d));
   const { date } = await searchParams;
   const logDate = date && allowedDates.includes(date) ? date : today;
 
@@ -36,8 +39,8 @@ export default async function DailyLogPage({
       <p className="mb-4 text-sm text-slate-500">
         対象日を選んで記録しよう{existing && "（入力済み・修正できます）"}
       </p>
-      <DateChips dates={allowedDates} selected={logDate} today={today} />
-      <DailyLogForm key={logDate} logDate={logDate} initial={initial} />
+      <DateChips dates={allowedDates} selected={logDate} today={today} enteredDates={existingDates} />
+      <DailyLogForm key={logDate} logDate={logDate} isToday={logDate === today} initial={initial} />
     </main>
   );
 }
