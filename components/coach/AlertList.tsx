@@ -29,6 +29,9 @@ export function AlertList({ rows }: { rows: PlayerAlertRow[] }) {
               {row.hasSubmittedToday ? (
                 <p className="mt-1 text-sm text-slate-600">
                   睡眠 {row.sleepHours ?? "-"}h ／ 疲労度 {row.fatigueLevel ?? "-"}
+                  {row.hasPractice && (
+                    <span className="ml-1">／ 練習強度 {row.practiceIntensity ?? "-"}</span>
+                  )}
                   {row.hasPain && row.painLocations.length > 0 && (
                     <span className="ml-1 text-rose-600">／ 痛み: {row.painLocations.join("・")}</span>
                   )}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { NumberScale } from "./NumberScale";
 import { SleepChips } from "./SleepChips";
 import { PainSection } from "./PainSection";
+import { PracticeSection } from "./PracticeSection";
 import { NotesSection } from "./NotesSection";
 import { submitDailyLog } from "@/app/(player)/daily-log/actions";
 import { dailyLogSchema } from "@/lib/validations/daily-log";
@@ -15,6 +16,8 @@ type DailyLogFormProps = {
     fatigueLevel: number | null;
     hasPain: boolean | null;
     painLocations: string[];
+    hasPractice: boolean | null;
+    practiceIntensity: number | null;
     selfScore: number | null;
     notes: string;
   } | null;
@@ -27,6 +30,8 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
   const [fatigueLevel, setFatigueLevel] = useState<number | null>(initial?.fatigueLevel ?? null);
   const [hasPain, setHasPain] = useState<boolean | null>(initial?.hasPain ?? null);
   const [painLocations, setPainLocations] = useState<string[]>(initial?.painLocations ?? []);
+  const [hasPractice, setHasPractice] = useState<boolean | null>(initial?.hasPractice ?? null);
+  const [practiceIntensity, setPracticeIntensity] = useState<number | null>(initial?.practiceIntensity ?? null);
   const [selfScore, setSelfScore] = useState<number | null>(initial?.selfScore ?? null);
   const [notes, setNotes] = useState(initial?.notes ?? "");
 
@@ -47,6 +52,8 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
       setFatigueLevel(draft.fatigueLevel ?? null);
       setHasPain(draft.hasPain ?? null);
       setPainLocations(draft.painLocations ?? []);
+      setHasPractice(draft.hasPractice ?? null);
+      setPracticeIntensity(draft.practiceIntensity ?? null);
       setSelfScore(draft.selfScore ?? null);
       setNotes(draft.notes ?? "");
     } catch {
@@ -60,15 +67,41 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
     try {
       window.localStorage.setItem(
         draftKey,
-        JSON.stringify({ sleepHours, fatigueLevel, hasPain, painLocations, selfScore, notes })
+        JSON.stringify({
+          sleepHours,
+          fatigueLevel,
+          hasPain,
+          painLocations,
+          hasPractice,
+          practiceIntensity,
+          selfScore,
+          notes,
+        })
       );
     } catch {
       // ストレージ容量オーバー等は無視してよい
     }
-  }, [sleepHours, fatigueLevel, hasPain, painLocations, selfScore, notes, draftKey, submitted]);
+  }, [
+    sleepHours,
+    fatigueLevel,
+    hasPain,
+    painLocations,
+    hasPractice,
+    practiceIntensity,
+    selfScore,
+    notes,
+    draftKey,
+    submitted,
+  ]);
 
   const parsed = useMemo(() => {
-    if (sleepHours === null || fatigueLevel === null || hasPain === null || selfScore === null) {
+    if (
+      sleepHours === null ||
+      fatigueLevel === null ||
+      hasPain === null ||
+      hasPractice === null ||
+      selfScore === null
+    ) {
       return null;
     }
     return dailyLogSchema.safeParse({
@@ -77,11 +110,13 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
       fatigueLevel,
       hasPain,
       painLocations,
+      hasPractice,
+      practiceIntensity,
       selfScore,
       notes,
       coachMessage: "",
     });
-  }, [logDate, sleepHours, fatigueLevel, hasPain, painLocations, selfScore, notes]);
+  }, [logDate, sleepHours, fatigueLevel, hasPain, painLocations, hasPractice, practiceIntensity, selfScore, notes]);
 
   const canSubmit = parsed?.success === true && !isPending;
 
@@ -137,6 +172,27 @@ export function DailyLogForm({ logDate, initial }: DailyLogFormProps) {
         }}
         onLocationsChange={setPainLocations}
       />
+
+      <div>
+        <PracticeSection
+          hasPractice={hasPractice}
+          onHasPracticeChange={(v) => {
+            setHasPractice(v);
+            if (!v) setPracticeIntensity(null);
+          }}
+        />
+        {hasPractice && (
+          <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <NumberScale
+              label="練習のきつさ"
+              value={practiceIntensity}
+              onChange={setPracticeIntensity}
+              lowLabel="1: 楽だった"
+              highLabel="10: 限界だった"
+            />
+          </div>
+        )}
+      </div>
 
       <NumberScale
         label="今日の自己採点"

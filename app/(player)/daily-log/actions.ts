@@ -57,6 +57,8 @@ export async function submitDailyLog(input: DailyLogInput): Promise<SubmitDailyL
       fatigue_level: d.fatigueLevel,
       has_pain: d.hasPain,
       pain_locations: d.hasPain ? d.painLocations : [],
+      has_practice: d.hasPractice,
+      practice_intensity: d.hasPractice ? d.practiceIntensity : null,
       self_score: d.selfScore,
       notes: d.notes || null,
       coach_message: d.coachMessage || null,

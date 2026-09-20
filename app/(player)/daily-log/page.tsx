@@ -23,6 +23,8 @@ export default async function DailyLogPage({
         fatigueLevel: existing.fatigue_level,
         hasPain: existing.has_pain,
         painLocations: existing.pain_locations ?? [],
+        hasPractice: existing.has_practice,
+        practiceIntensity: existing.practice_intensity,
         selfScore: existing.self_score,
         notes: existing.notes ?? "",
       }

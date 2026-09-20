@@ -13,6 +13,8 @@ export type PlayerAlertRow = {
   hasPain: boolean | null;
   painLocations: string[];
   sleepHours: number | null;
+  hasPractice: boolean | null;
+  practiceIntensity: number | null;
 };
 
 /**
@@ -38,7 +40,7 @@ export async function getTodaysAlerts(schoolId: string): Promise<{
 
   const { data: logs } = await supabase
     .from("daily_logs")
-    .select("player_id, fatigue_level, has_pain, pain_locations, sleep_hours")
+    .select("player_id, fatigue_level, has_pain, pain_locations, sleep_hours, has_practice, practice_intensity")
     .eq("school_id", schoolId)
     .eq("log_date", logDate);
 
@@ -64,6 +66,8 @@ export async function getTodaysAlerts(schoolId: string): Promise<{
       hasPain: log?.has_pain ?? null,
       painLocations: log?.pain_locations ?? [],
       sleepHours: log?.sleep_hours ?? null,
+      hasPractice: log?.has_practice ?? null,
+      practiceIntensity: log?.practice_intensity ?? null,
     };
   });
 

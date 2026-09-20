@@ -17,6 +17,8 @@ export type DailyTrendPoint = {
   selfScore: number | null;
   hasPain: boolean;
   painLocations: string[];
+  hasPractice: boolean | null;
+  practiceIntensity: number | null;
   notes: string | null;
   likedByCoach: boolean;
 };
@@ -101,7 +103,9 @@ export async function getPlayerDetail(playerId: string) {
 
   const { data: dailyLogs } = await supabase
     .from("daily_logs")
-    .select("id, log_date, sleep_hours, fatigue_level, self_score, has_pain, pain_locations, notes, liked_by_coach_at")
+    .select(
+      "id, log_date, sleep_hours, fatigue_level, self_score, has_pain, pain_locations, has_practice, practice_intensity, notes, liked_by_coach_at"
+    )
     .eq("player_id", playerId)
     .gte("log_date", sinceStr)
     .order("log_date", { ascending: true });
@@ -150,6 +154,8 @@ export async function getPlayerDetail(playerId: string) {
     selfScore: l.self_score,
     hasPain: l.has_pain,
     painLocations: l.pain_locations ?? [],
+    hasPractice: l.has_practice,
+    practiceIntensity: l.practice_intensity,
     notes: l.notes,
     likedByCoach: !!l.liked_by_coach_at,
   }));

@@ -32,12 +32,18 @@ export const dailyLogSchema = z.object({
   fatigueLevel: z.number().int().min(1).max(10),
   hasPain: z.boolean(),
   painLocations: z.array(z.enum(PAIN_LOCATIONS)).default([]),
+  hasPractice: z.boolean(),
+  // 練習をした日だけ「きつさ」を入力する(1-10のsession RPE的な主観指標)
+  practiceIntensity: z.number().int().min(1).max(10).nullable().default(null),
   selfScore: z.number().int().min(1).max(10),
   notes: z.string().max(500).optional().default(""),
   coachMessage: z.string().max(500).optional().default(""),
 }).refine(
   (data) => !data.hasPain || data.painLocations.length > 0,
   { message: "痛みがある場合は部位を1つ以上選択してください", path: ["painLocations"] }
+).refine(
+  (data) => !data.hasPractice || data.practiceIntensity !== null,
+  { message: "練習をした場合はきつさを選択してください", path: ["practiceIntensity"] }
 );
 
 export type DailyLogInput = z.infer<typeof dailyLogSchema>;

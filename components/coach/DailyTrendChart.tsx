@@ -62,6 +62,17 @@ export function DailyTrendChart({ points }: { points: DailyTrendPoint[] }) {
             yAxisID: "y1",
             tension: 0.3,
           },
+          {
+            type: "line" as const,
+            label: "練習強度",
+            data: points.map((p) => (p.hasPractice ? p.practiceIntensity : null)),
+            borderColor: "#3b82f6",
+            backgroundColor: "#3b82f6",
+            borderDash: [4, 3],
+            yAxisID: "y1",
+            tension: 0.3,
+            spanGaps: false,
+          },
         ],
       }}
       options={{
