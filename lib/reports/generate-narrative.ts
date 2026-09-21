@@ -20,6 +20,8 @@ export type NarrativeDailyNote = {
   fatigueLevel: number | null;
   hasPain: boolean;
   painLocations: string[];
+  hasPractice: boolean | null;
+  practiceIntensity: number | null;
   notes: string | null;
 };
 
@@ -152,6 +154,7 @@ function buildPrompt(input: NarrativeInput): string {
         const tags: string[] = [];
         if (d.selfScore !== null) tags.push(`自己採点${d.selfScore}`);
         if (d.fatigueLevel !== null) tags.push(`疲労度${d.fatigueLevel}`);
+        if (d.hasPractice) tags.push(`練習強度${d.practiceIntensity ?? "-"}`);
         if (d.hasPain) tags.push(`痛み: ${d.painLocations.join("・") || "あり"}`);
         return `${d.logDate}（${tags.join(" / ") || "記録なし"}）: ${d.notes}`;
       })
@@ -191,6 +194,7 @@ function buildPrompt(input: NarrativeInput): string {
 - 平均睡眠時間: ${stats.avgSleepHours ?? "-"}時間
 - 平均疲労度: ${stats.avgFatigueLevel ?? "-"}/10
 - 平均自己採点: ${stats.avgSelfScore ?? "-"}/10
+- 練習・試合をした日数: ${stats.practiceDays}日、練習をした日の平均きつさ: ${stats.avgPracticeIntensity ?? "-"}/10
 - 痛みの記録: ${stats.painDays.length}日（${stats.painDays.map((p) => `${p.date}: ${p.locations.join("・")}`).join(", ") || "なし"}）
 
 # 選手が今月書いた日誌の自由記述コメント（自己採点・疲労度・痛み付き）
@@ -220,6 +224,7 @@ ${previousText}
 
 # 文章のトーン・注意点
 - 保護者や選手本人が読んで前向きになれる、客観的かつ専門的（スポーツ科学・発達段階を踏まえた）なトーンで書く。
+- 練習強度と疲労度・痛みの記録を見比べて、負荷が高い時期の様子など気づきがあれば触れてよい（無理にこじつけない）。
 - 選手が実際に書いていない内容を過度に創作しない。日誌・試合記録に書かれた事実や言葉を根拠にする。
 - 日誌のコメントが極端に少ない、またはネガティブな内容が多い月は、無理に美化せず、事実に即して淡々と記述する。
 - 「今後の技術テーマ」「今後の決め事・アドバイス」（コーチ自身の考察部分）はここでは書かない。コーチが別途アプリ上で入力する。

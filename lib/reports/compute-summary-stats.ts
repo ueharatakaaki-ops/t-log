@@ -6,6 +6,8 @@ export type MonthlyReportSummaryStats = {
   avgSleepHours: number | null; // 平均睡眠時間
   avgFatigueLevel: number | null; // 平均疲労度
   avgSelfScore: number | null;
+  practiceDays: number; // 練習・試合をした日数
+  avgPracticeIntensity: number | null; // 練習をした日の平均強度(1-10)
   painDays: { date: string; locations: string[] }[]; // 痛み履歴
   dailySeries: {
     date: string;
@@ -53,6 +55,10 @@ export async function computeStatsForRange(
   const sleepValues = logs.map((l) => l.sleep_hours).filter((v): v is number => v !== null);
   const fatigueValues = logs.map((l) => l.fatigue_level).filter((v): v is number => v !== null);
   const selfScoreValues = logs.map((l) => l.self_score).filter((v): v is number => v !== null);
+  const practiceIntensityValues = logs
+    .filter((l) => l.has_practice)
+    .map((l) => l.practice_intensity)
+    .filter((v): v is number => v !== null);
 
   const painDays = logs
     .filter((l) => l.has_pain)
@@ -64,6 +70,8 @@ export async function computeStatsForRange(
     avgSleepHours: avg(sleepValues),
     avgFatigueLevel: avg(fatigueValues),
     avgSelfScore: avg(selfScoreValues),
+    practiceDays: logs.filter((l) => l.has_practice).length,
+    avgPracticeIntensity: avg(practiceIntensityValues),
     painDays,
     dailySeries: logs.map((l) => ({
       date: l.log_date,

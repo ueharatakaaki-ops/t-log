@@ -106,7 +106,7 @@ async function tryFillNarrative(
       admin.from("players").select("full_name, birthdate").eq("id", playerId).single(),
       admin
         .from("daily_logs")
-        .select("log_date, self_score, fatigue_level, has_pain, pain_locations, notes")
+        .select("log_date, self_score, fatigue_level, has_pain, pain_locations, has_practice, practice_intensity, notes")
         .eq("player_id", playerId)
         .gte("log_date", targetMonth)
         .lt("log_date", nextMonthExclusive(targetMonth))
@@ -143,6 +143,8 @@ async function tryFillNarrative(
       fatigueLevel: d.fatigue_level,
       hasPain: d.has_pain,
       painLocations: d.pain_locations ?? [],
+      hasPractice: d.has_practice,
+      practiceIntensity: d.practice_intensity,
       notes: d.notes,
     }));
 

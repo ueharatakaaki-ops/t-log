@@ -50,11 +50,12 @@ export function ReportWebView({
         <p className="text-sm text-slate-300 print:text-slate-600">{periodLabel}</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 print:grid-cols-5">
         <StatCard label="入力日数" value={stats.loggedDays} />
         <StatCard label="試合報告数" value={stats.matchCount} />
         <StatCard label="平均睡眠(h)" value={stats.avgSleepHours ?? "-"} />
         <StatCard label="平均疲労度" value={stats.avgFatigueLevel ?? "-"} />
+        <StatCard label="平均練習強度" value={stats.avgPracticeIntensity ?? "-"} />
       </div>
 
       <Section title="コンディション推移">
