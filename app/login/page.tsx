@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 // 招待リンクが無効・期限切れ、または既に使用済みだった場合に
@@ -35,6 +36,16 @@ export default async function LoginPage({
         <p className="mt-6 text-center text-xs text-slate-400">
           アカウントはスクール管理者からの招待メールで発行されます。
           初めての方は招待メール内のリンクからパスワードを設定してください。
+        </p>
+
+        <p className="mt-4 text-center text-xs text-slate-400">
+          <Link href="/terms" className="underline">
+            利用規約
+          </Link>
+          {" ・ "}
+          <Link href="/privacy" className="underline">
+            プライバシーポリシー
+          </Link>
         </p>
       </div>
     </main>
