@@ -14,7 +14,7 @@ export default async function FamilyHistoryPage() {
       <main className="min-h-screen bg-[#F4F6F8] px-4 pt-6 pb-10">
         <h1 className="mb-1 text-xl font-bold text-[#0F2537]">過去ログ</h1>
         <p className="mb-6 text-sm text-slate-500">これまでの記録を確認できます</p>
-        <HistoryView detail={detail} />
+        <HistoryView detail={detail} viewerRole="player" />
       </main>
     );
   }
@@ -37,7 +37,7 @@ export default async function FamilyHistoryPage() {
       <main className="min-h-screen bg-[#F4F6F8] px-4 pt-6 pb-10">
         <h1 className="mb-1 text-xl font-bold text-[#0F2537]">{children[0].fullName} の過去ログ</h1>
         <p className="mb-6 text-sm text-slate-500">これまでの記録を確認できます</p>
-        <HistoryView detail={detail} />
+        <HistoryView detail={detail} viewerRole="parent" />
       </main>
     );
   }

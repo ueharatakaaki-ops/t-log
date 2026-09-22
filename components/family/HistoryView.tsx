@@ -22,7 +22,7 @@ type Detail = {
   physicalMeasurements?: PhysicalMeasurementRecord[];
 };
 
-const TABS = [
+const ALL_TABS = [
   { id: "trend", label: "推移グラフ" },
   { id: "daily", label: "日別ログ" },
   { id: "match", label: "試合履歴" },
@@ -30,8 +30,16 @@ const TABS = [
   { id: "physical", label: "身体データ" },
 ] as const;
 
-export function HistoryView({ detail }: { detail: Detail }) {
-  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("trend");
+// 保護者（parent）からはDaily Log・月次目標を一切見せない方針のため、
+// 「推移グラフ」（Daily Logの集計グラフ）「日別ログ」「今月の目標」の
+// 3タブを非表示にする。選手本人が自分の履歴を見る場合はこれまで通り全タブ表示。
+// （RLS側でも daily_logs / goal_logs から保護者の閲覧権限を外しているため、
+// 仮にこのUI側のフィルタを迂回されてもデータ自体は取得できない）
+const PARENT_HIDDEN_TAB_IDS = new Set(["trend", "daily", "goal"]);
+
+export function HistoryView({ detail, viewerRole }: { detail: Detail; viewerRole: "player" | "parent" }) {
+  const TABS = viewerRole === "parent" ? ALL_TABS.filter((t) => !PARENT_HIDDEN_TAB_IDS.has(t.id)) : ALL_TABS;
+  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>(TABS[0].id);
 
   return (
     <div>

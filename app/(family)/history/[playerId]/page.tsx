@@ -30,7 +30,7 @@ export default async function FamilyChildHistoryPage({
       )}
       <h1 className="mb-1 text-xl font-bold text-[#0F2537]">{detail.profile.fullName} の過去ログ</h1>
       <p className="mb-6 text-sm text-slate-500">これまでの記録を確認できます</p>
-      <HistoryView detail={detail} />
+      <HistoryView detail={detail} viewerRole={ctx.role} />
     </main>
   );
 }
