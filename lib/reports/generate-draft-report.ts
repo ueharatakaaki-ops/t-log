@@ -162,9 +162,15 @@ async function tryFillNarrative(
 
     const prev = previousReport.data;
 
+    // 年齢は「対象月の時点」で計算する（=第三引数にtargetMonthを渡す）。
+    // 第三引数を省略すると「関数呼び出し時点（＝今日）」の年齢になってしまい、
+    // 過去月のレポートをコーチが後から再生成した場合に、誕生日を挟んでいると
+    // AIに渡す年齢が実際の対象月時点より1つ多く伝わってしまう不具合があったため修正。
+    // computeSchoolGrade（学年）は元々targetMonthを渡していたため、この2つで
+    // 基準日がズレていた。
     const result = await generateReportNarrative({
       playerName: player.data.full_name,
-      age: calculateAge(player.data.birthdate),
+      age: calculateAge(player.data.birthdate, new Date(targetMonth)),
       grade: computeSchoolGrade(player.data.birthdate, targetMonth)?.label ?? null,
       targetMonth,
       stats,
