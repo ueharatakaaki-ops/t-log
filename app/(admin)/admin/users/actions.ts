@@ -128,3 +128,57 @@ export async function inviteUser(input: InviteUserInput): Promise<InviteUserResu
   revalidatePath("/admin/users");
   return { ok: true };
 }
+
+export type SendPasswordResetLinkResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * 既存ユーザーがパスワードを忘れた場合に、パスワード再設定メールを送る。
+ *
+ * 重要: これは inviteUser（新規アカウント発行）とは別物。inviteUserByEmail を
+ * 既に本登録済み（確認済み）のメールアドレスに対してもう一度呼んでも、Supabase側は
+ * 「既に登録済みのメールアドレスです」というエラーを返すだけで、以前使っていた
+ * アカウント（選手のこれまでの記録等）にログインし直せるようにはならない。
+ * 既存アカウントのパスワードだけをリセットしたい場合は、resetPasswordForEmail
+ * （Supabaseの「Reset Password」メールテンプレートでリンクを送る機能）を使う必要がある。
+ *
+ * 事前準備: Supabaseダッシュボードの Authentication → Emails → Templates →
+ * 「Reset Password」テンプレートの本文にあるリンクを、招待メールと同じ形式
+ * （{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery）に
+ * 変更しておく必要がある（招待メールのテンプレート修正時と同じ考え方）。
+ */
+export async function sendPasswordResetLink(userId: string): Promise<SendPasswordResetLinkResult> {
+  const admin = await requireAdmin();
+  const supabaseAdmin = createAdminClient();
+
+  // 自校のユーザーにしか送れないようにする（他校のユーザーIDを渡されても弾く）
+  const { data: targetUser } = await supabaseAdmin
+    .from("app_users")
+    .select("id, school_id")
+    .eq("id", userId)
+    .eq("school_id", admin.schoolId)
+    .maybeSingle();
+
+  if (!targetUser) {
+    return { ok: false, error: "対象のユーザーが見つかりません" };
+  }
+
+  const { data: authUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+  if (getUserError || !authUser?.user?.email) {
+    return { ok: false, error: "ユーザーのメールアドレスを取得できませんでした" };
+  }
+
+  const { error } = await supabaseAdmin.auth.resetPasswordForEmail(authUser.user.email);
+  if (error) {
+    return { ok: false, error: `パスワード再設定メールの送信に失敗しました: ${error.message}` };
+  }
+
+  await logAudit({
+    schoolId: admin.schoolId,
+    actorId: admin.userId,
+    action: "update",
+    targetTable: "app_users",
+    targetId: userId,
+  });
+
+  return { ok: true };
+}

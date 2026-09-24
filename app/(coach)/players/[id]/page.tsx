@@ -5,8 +5,10 @@ import { DailyTrendChart } from "@/components/coach/DailyTrendChart";
 import { DailyNotesList } from "@/components/coach/DailyNotesList";
 import { MatchHistoryList } from "@/components/coach/MatchHistoryList";
 import { GoalSummaryCard } from "@/components/coach/GoalSummaryCard";
+import { GoalEditHistoryList } from "@/components/coach/GoalEditHistoryList";
 import { CoachNotesPanel } from "@/components/coach/CoachNotesPanel";
 import { PhysicalMeasurementHistoryList } from "@/components/physical/PhysicalMeasurementHistoryList";
+import { getGoalEditHistory } from "@/lib/queries/goal-edit-history";
 
 export default async function PlayerDetailPage({
   params,
@@ -15,7 +17,7 @@ export default async function PlayerDetailPage({
 }) {
   await requireStaff();
   const { id } = await params;
-  const detail = await getPlayerDetail(id);
+  const [detail, goalEdits] = await Promise.all([getPlayerDetail(id), getGoalEditHistory(id)]);
 
   if (!detail) notFound();
 
@@ -45,6 +47,9 @@ export default async function PlayerDetailPage({
 
       <Section title="今月の目標">
         <GoalSummaryCard goal={goal} history={goalHistory} />
+        <div className="mt-3">
+          <GoalEditHistoryList edits={goalEdits} />
+        </div>
       </Section>
 
       <Section title="試合履歴">

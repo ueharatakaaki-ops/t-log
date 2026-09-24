@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { goalLogSchema, type GoalLogInput } from "@/lib/validations/goal-log";
+import { isGoalLogEditable } from "@/lib/date";
 
 export type SubmitGoalLogResult =
   | { ok: true }
@@ -39,6 +40,37 @@ export async function submitGoalLog(input: GoalLogInput): Promise<SubmitGoalLogR
   }
 
   const d = parsed.data;
+
+  // 既に登録済みかどうかを確認する。初回登録なのか、後からの書き換えなのかで
+  // 扱いを分ける（書き換えの場合のみ締切チェック・修正履歴の記録を行う）。
+  const { data: existingGoal } = await supabase
+    .from("goal_logs")
+    .select("id, technical_goal, physical_goal, action_plan")
+    .eq("player_id", appUser.id)
+    .eq("target_month", d.targetMonth)
+    .maybeSingle();
+
+  if (existingGoal) {
+    // Daily Logと同様、対象月が始まった後の後出し修正は禁止する
+    // （コーチが目標をもとに評価・声かけを始めた後に内容が変わってしまうのを防ぐため）。
+    if (!isGoalLogEditable(d.targetMonth)) {
+      return { ok: false, error: "対象月が始まっているため、目標の内容は修正できません" };
+    }
+
+    // 修正前の内容を履歴として残す（コーチが「いつ・何から何に変わったか」を確認できるようにするため）
+    const { error: historyError } = await supabase.from("goal_log_edits").insert({
+      goal_log_id: existingGoal.id,
+      player_id: appUser.id,
+      school_id: appUser.school_id,
+      target_month: d.targetMonth,
+      previous_technical_goal: existingGoal.technical_goal,
+      previous_physical_goal: existingGoal.physical_goal,
+      previous_action_plan: existingGoal.action_plan,
+    });
+    if (historyError) {
+      return { ok: false, error: "修正履歴の保存に失敗しました。時間をおいて再度お試しください" };
+    }
+  }
 
   // player_id + target_month のUNIQUE制約を利用し、同月内の再送信は上書き（修正）として扱う。
   // coach_feedback列はここでは更新しない（コーチ側からのみ編集される想定のため、

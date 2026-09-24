@@ -38,38 +38,32 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="flex flex-col divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
-        {users.map((u) => {
-          // コーチ・スクール管理者はロール変更画面、選手は生年月日の訂正画面を開けるようにする
-          // （保護者・システム管理者は今のところ編集画面がないため通常表示のみ）
-          const editable = u.role === "coach" || u.role === "school_admin" || u.role === "player";
-          const content = (
-            <>
-              <div>
-                <p className="font-semibold text-[#0F2537]">{u.displayName}</p>
-                <p className="text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("ja-JP")} 登録</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {u.birthdateMissing && (
-                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                    生年月日未入力
-                  </span>
-                )}
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  {ROLE_LABEL[u.role] ?? u.role}
-                </span>
-              </div>
-            </>
-          );
-          return editable ? (
-            <Link key={u.id} href={`/admin/users/${u.id}`} className="flex items-center justify-between p-4 active:bg-[#F4F6F8]">
-              {content}
-            </Link>
-          ) : (
-            <div key={u.id} className="flex items-center justify-between p-4">
-              {content}
+        {/* 全ロールとも、この詳細画面からパスワード再設定メールを送れるようにするため、
+            ロールに関わらず全員分クリック可能にしている（以前は保護者・システム管理者は
+            編集画面が無いという理由でクリック不可にしていたが、それだとパスワードを
+            忘れた保護者に再設定メールを送る手段が無かった） */}
+        {users.map((u) => (
+          <Link
+            key={u.id}
+            href={`/admin/users/${u.id}`}
+            className="flex items-center justify-between p-4 active:bg-[#F4F6F8]"
+          >
+            <div>
+              <p className="font-semibold text-[#0F2537]">{u.displayName}</p>
+              <p className="text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("ja-JP")} 登録</p>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-2">
+              {u.birthdateMissing && (
+                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                  生年月日未入力
+                </span>
+              )}
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {ROLE_LABEL[u.role] ?? u.role}
+              </span>
+            </div>
+          </Link>
+        ))}
         {users.length === 0 && <p className="p-4 text-sm text-slate-400">まだユーザーがいません</p>}
       </div>
 

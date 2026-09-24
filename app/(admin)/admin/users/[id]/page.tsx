@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { getUserDetail } from "@/lib/queries/admin-users";
 import { EditUserRoleForm } from "@/components/admin/EditUserRoleForm";
 import { EditPlayerBirthdateForm } from "@/components/admin/EditPlayerBirthdateForm";
+import { SendPasswordResetButton } from "@/components/admin/SendPasswordResetButton";
 
 const ROLE_LABEL: Record<string, string> = {
   system_admin: "システム管理者",
@@ -26,15 +27,19 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         現在のロール：{ROLE_LABEL[user.role] ?? user.role}
       </p>
 
-      {["coach", "school_admin"].includes(user.role) ? (
-        <EditUserRoleForm user={user} />
-      ) : user.role === "player" ? (
-        <EditPlayerBirthdateForm user={user} />
-      ) : (
-        <p className="rounded-xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
-          保護者・システム管理者のロールは、この画面からは変更できません。
-        </p>
-      )}
+      <div className="mb-6 flex flex-col gap-4">
+        {["coach", "school_admin"].includes(user.role) ? (
+          <EditUserRoleForm user={user} />
+        ) : user.role === "player" ? (
+          <EditPlayerBirthdateForm user={user} />
+        ) : (
+          <p className="rounded-xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
+            保護者・システム管理者のロールは、この画面からは変更できません。
+          </p>
+        )}
+      </div>
+
+      <SendPasswordResetButton userId={user.id} displayName={user.displayName} />
     </main>
   );
 }

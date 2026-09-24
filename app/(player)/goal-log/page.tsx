@@ -1,7 +1,7 @@
 import { GoalLogForm } from "@/components/goal-log/GoalLogForm";
 import { PastGoalsList } from "@/components/coach/GoalSummaryCard";
 import { getGoalLog, getGoalLogHistory } from "./actions";
-import { defaultGoalLogMonth } from "@/lib/date";
+import { defaultGoalLogMonth, isGoalLogEditable } from "@/lib/date";
 import { monthInputToTargetMonth } from "@/lib/validations/goal-log";
 import type { GoalSummary } from "@/lib/queries/player-detail";
 
@@ -38,7 +38,11 @@ export default async function GoalLogPage() {
       <p className="mb-6 text-sm text-slate-500">
         {monthValue} の目標を設定しよう{existing && "（入力済み・修正できます）"}
       </p>
-      <GoalLogForm defaultMonthValue={monthValue} initial={initial} />
+      <GoalLogForm
+        defaultMonthValue={monthValue}
+        initial={initial}
+        editable={!existing || isGoalLogEditable(targetMonth)}
+      />
 
       <div className="mx-auto mt-8 max-w-md pb-52">
         <PastGoalsList goals={history} />

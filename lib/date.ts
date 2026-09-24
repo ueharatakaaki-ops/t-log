@@ -46,6 +46,22 @@ export function isDailyLogEditable(logDate: string, now: Date = new Date()): boo
 }
 
 /**
+ * 指定した目標（Goal Log）の対象月(targetMonth, "YYYY-MM-01")が、まだ選手による
+ * 修正が可能かどうかを判定する。Daily Logと同じ考え方で、「対象月が始まった後の
+ * 後出し修正」を防ぐため、締切は「対象月の初日 0:00(JST)」＝対象月が始まる前まで、とする。
+ * （初回の登録自体はこの関数の対象外。あくまで既に登録済みの内容を書き換える場合の判定）
+ * now を渡すとその時刻を基準に判定する（テスト用。省略時は現在時刻）。
+ */
+export function isGoalLogEditable(targetMonth: string, now: Date = new Date()): boolean {
+  const [y, m] = targetMonth.split("-").map(Number);
+  if (!y || !m) return false;
+  // 締切 = 対象月の初日 0:00(JST)。JSTはUTC+9なので、UTCでは前日15:00に相当する
+  // （Date.UTCは時刻に負数を渡しても正しく繰り下げて正規化してくれる）。
+  const cutoffUtcMs = Date.UTC(y, m - 1, 1, -9, 0, 0);
+  return now.getTime() < cutoffUtcMs;
+}
+
+/**
  * Goal Logのデフォルト対象月（"YYYY-MM"）を計算する。
  * 運用上、月次目標は毎月25日〜月末に「次月分」を入力する想定のため、
  * 25日以降は翌月をデフォルトにする。
