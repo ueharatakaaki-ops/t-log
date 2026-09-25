@@ -112,7 +112,7 @@ export const TERMS_MARKDOWN = `# t-log 利用規約
 本規約に関するお問い合わせは、下記までご連絡ください。
 
 t-log運営事務局（SV合同会社）
-uehara@sv-llc.net
+info@sv-llc.net
 
 ---
 
