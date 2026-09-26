@@ -54,5 +54,9 @@ export const config = {
   // このmiddlewareの対象から除外する。除外しないと未ログイン扱いで
   // 常に/loginへリダイレクトされてしまい、Vercel Cronからの呼び出しが
   // 到達できなくなる（実際にmonthly-reportsのcronがこれで失敗していた）。
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // 画像ファイル（public/logo.pngなど）も除外する。除外しないと未ログイン時に
+  // /loginへリダイレクトされ、ログイン画面のロゴ自体が表示できなくなる。
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)",
+  ],
 };
