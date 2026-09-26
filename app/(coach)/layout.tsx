@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/nav/BottomNav";
+import { TopBar } from "@/components/nav/TopBar";
 import { requireStaff } from "@/lib/auth/require-staff";
 
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
 
   return (
     <>
+      <TopBar />
       <div className="pb-16">{children}</div>
       <BottomNav items={navItems} />
     </>

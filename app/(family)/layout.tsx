@@ -1,5 +1,6 @@
 import { requireFamily } from "@/lib/auth/require-family";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { TopBar } from "@/components/nav/TopBar";
 import { PLAYER_NAV_ITEMS } from "@/lib/nav/player-nav";
 
 const PARENT_NAV = [
@@ -13,6 +14,7 @@ export default async function FamilyLayout({ children }: { children: React.React
 
   return (
     <>
+      <TopBar />
       <div className="pb-16">{children}</div>
       <BottomNav items={items} />
     </>

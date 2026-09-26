@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/nav/BottomNav";
+import { TopBar } from "@/components/nav/TopBar";
 import { requireAdmin } from "@/lib/auth/require-admin";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <>
+      <TopBar />
       <div className="pb-16">{children}</div>
       <BottomNav items={navItems} />
     </>

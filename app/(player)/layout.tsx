@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { TopBar } from "@/components/nav/TopBar";
 import { PLAYER_NAV_ITEMS } from "@/lib/nav/player-nav";
 
 export default async function PlayerLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export default async function PlayerLayout({ children }: { children: React.React
 
   return (
     <>
+      <TopBar />
       <div className="pb-16">{children}</div>
       <BottomNav items={PLAYER_NAV_ITEMS} />
     </>
