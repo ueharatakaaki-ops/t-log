@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "t-log",
     short_name: "t-log",
-    description: "NLTC Junior Team コンディション管理アプリ",
+    description: "ジュニアスポーツアカデミー向け 選手管理アプリ「t-log」",
     start_url: "/",
     display: "standalone",
     background_color: "#F4F6F8",

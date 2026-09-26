@@ -29,7 +29,7 @@ export default async function LoginPage({
           priority
         />
         <h1 className="mb-1 text-center text-2xl font-bold text-[#0F2537]">t-log</h1>
-        <p className="mb-8 text-center text-sm text-slate-500">NLTC Junior Team</p>
+        <p className="mb-8 text-center text-sm text-slate-500">ジュニアスポーツアカデミー向け 選手管理アプリ</p>
 
         <LoginForm initialError={initialError} />
 
