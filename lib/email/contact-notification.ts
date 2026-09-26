@@ -35,7 +35,9 @@ export async function sendContactNotificationEmail(inquiry: ContactInquiry) {
 
   const resend = new Resend(apiKey);
 
-  await resend.emails.send({
+  // Resend SDKは送信失敗（ドメイン未認証・APIキー不正など）でも例外を投げず、
+  // 戻り値のerrorで返す。呼び出し側のtry/catchでログに残せるよう、ここで投げ直す。
+  const { error } = await resend.emails.send({
     from: CONTACT_NOTIFICATION_FROM,
     to: CONTACT_NOTIFICATION_TO,
     replyTo: inquiry.email,
@@ -53,4 +55,8 @@ export async function sendContactNotificationEmail(inquiry: ContactInquiry) {
       `※このメールにそのまま返信すると、送信者（${inquiry.email}）宛に届きます。`,
     ].join("\n"),
   });
+
+  if (error) {
+    throw new Error(`Resend send failed: ${error.name}: ${error.message}`);
+  }
 }
