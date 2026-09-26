@@ -15,6 +15,7 @@
     "migrate:build-name-map": "tsx scripts/migration/02-build-name-map.ts",
     "migrate:transform-load": "tsx scripts/migration/03-transform-load.ts",
     "migrate:verify": "tsx scripts/migration/04-verify.ts",
+    "fix:match-comments": "tsx scripts/migration/06-fix-match-comments.ts",
     "test:rls:seed": "tsx scripts/security/seed-test-users.ts",
     "test:rls": "tsx scripts/security/rls-tests.ts",
     "test:rls:cleanup": "tsx scripts/security/cleanup-test-users.ts"
