@@ -15,10 +15,44 @@ export function MarketingHomepage() {
     const root = containerRef.current;
     if (!root) return;
 
+    const cleanups: Array<() => void> = [];
+
+    // ハンバーガーメニュー（スマホ幅でヘッダーのナビを開閉する）
+    const menuToggle = root.querySelector<HTMLButtonElement>("#mobile-menu-toggle");
+    const mobileMenu = root.querySelector<HTMLDivElement>("#mobile-menu");
+    const iconOpen = root.querySelector<HTMLElement>("#mobile-menu-icon-open");
+    const iconClose = root.querySelector<HTMLElement>("#mobile-menu-icon-close");
+
+    if (menuToggle && mobileMenu) {
+      let menuOpen = false;
+
+      const setMenuOpen = (open: boolean) => {
+        menuOpen = open;
+        mobileMenu.style.display = open ? "flex" : "none";
+        menuToggle.setAttribute("aria-expanded", String(open));
+        if (iconOpen) iconOpen.style.display = open ? "none" : "block";
+        if (iconClose) iconClose.style.display = open ? "block" : "none";
+      };
+
+      const handleToggle = () => setMenuOpen(!menuOpen);
+      menuToggle.addEventListener("click", handleToggle);
+      cleanups.push(() => menuToggle.removeEventListener("click", handleToggle));
+
+      // メニュー内のリンク（ページ内アンカー／ログイン）を押したら閉じる
+      const menuLinks = Array.from(mobileMenu.querySelectorAll("a"));
+      menuLinks.forEach((link) => {
+        const handleLinkClick = () => setMenuOpen(false);
+        link.addEventListener("click", handleLinkClick);
+        cleanups.push(() => link.removeEventListener("click", handleLinkClick));
+      });
+    }
+
     const form = root.querySelector<HTMLFormElement>("#contact-form");
     const submitButton = root.querySelector<HTMLButtonElement>("#contact-submit");
     const statusEl = root.querySelector<HTMLParagraphElement>("#contact-status");
-    if (!form || !submitButton || !statusEl) return;
+    if (!form || !submitButton || !statusEl) {
+      return () => cleanups.forEach((fn) => fn());
+    }
 
     function setStatus(message: string, color: string) {
       if (!statusEl) return;
@@ -70,7 +104,9 @@ export function MarketingHomepage() {
     }
 
     submitButton.addEventListener("click", handleSubmit);
-    return () => submitButton.removeEventListener("click", handleSubmit);
+    cleanups.push(() => submitButton.removeEventListener("click", handleSubmit));
+
+    return () => cleanups.forEach((fn) => fn());
   }, []);
 
   return (
