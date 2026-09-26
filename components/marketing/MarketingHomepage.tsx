@@ -30,6 +30,7 @@ export function MarketingHomepage() {
         menuOpen = open;
         mobileMenu.style.display = open ? "flex" : "none";
         menuToggle.setAttribute("aria-expanded", String(open));
+        menuToggle.setAttribute("aria-label", open ? "メニューを閉じる" : "メニューを開く");
         if (iconOpen) iconOpen.style.display = open ? "none" : "block";
         if (iconClose) iconClose.style.display = open ? "block" : "none";
       };
