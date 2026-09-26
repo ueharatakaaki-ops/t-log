@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ROLE_LANDING } from "@/lib/auth/role-landing";
+import { MarketingHomepage } from "@/components/marketing/MarketingHomepage";
 
 /**
  * トップページ。
@@ -18,8 +19,15 @@ import { ROLE_LANDING } from "@/lib/auth/role-landing";
  * どちらの形式で来るかは事前に断定できないため、両方に対応している。
  * このページ自体はmiddleware.tsのPUBLIC_PATHSに含め、未ログイン状態でも
  * 一度はここに到達できるようにしてある。
+ *
+ * 上記のいずれでもなく（code無し・access_token無し）、かつセッションも無い
+ * ＝ただの未ログイン訪問者の場合は、/loginへ飛ばさず製品紹介サイト
+ * （MarketingHomepage）をこのURLでそのまま表示する。認証リンク経由で
+ * 来たがセッション確立に失敗したケースは、これまで通り/loginへ送る。
  */
 export default function RootPage() {
+  const [showMarketing, setShowMarketing] = useState(false);
+
   useEffect(() => {
     (async () => {
       const supabase = createClient();
@@ -49,7 +57,14 @@ export default function RootPage() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        window.location.href = "/login";
+        // codeもaccess_tokenも無い＝認証リンク経由ではないただの訪問者。
+        // この場合だけ、/loginへ飛ばさず製品紹介サイトを表示する。
+        if (!code && !hash.includes("access_token=")) {
+          setShowMarketing(true);
+        } else {
+          // 認証リンク経由で来たがセッション確立に失敗した（リンク切れ等）
+          window.location.href = "/login";
+        }
         return;
       }
 
@@ -71,6 +86,10 @@ export default function RootPage() {
       window.location.href = landing;
     })();
   }, []);
+
+  if (showMarketing) {
+    return <MarketingHomepage />;
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F4F6F8]">

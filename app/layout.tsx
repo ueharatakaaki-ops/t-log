@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-// このアプリは「静的なマーケティングページ」を一切持たず、全ページが
-// Supabaseの認証情報（cookies経由のセッション）に依存する。
+// トップページ（"/"）は未ログイン訪問者向けに製品紹介サイトを表示するが、
+// それ以外の全ページはSupabaseの認証情報（cookies経由のセッション）に依存する。
 // ここでforce-dynamicを指定すると、配下の全ルート（page.tsx）に設定が
 // 継承され、ビルド時の静的プリレンダリングを試みなくなる。
 // これにより、ビルド環境でNEXT_PUBLIC_SUPABASE_URL等が未解決のまま
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "t-log",
-  description: "NLTC Junior Team コンディション管理アプリ",
+  description: "ジュニアスポーツアカデミー向け 選手管理アプリ「t-log」",
 };
 
 // スマホのブラウザ上部バー（アドレスバー等）の色をブランドカラーに合わせる
