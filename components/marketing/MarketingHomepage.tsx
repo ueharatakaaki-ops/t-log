@@ -28,7 +28,7 @@ export function MarketingHomepage() {
     }
 
     async function handleSubmit() {
-      if (!form || !submitButton) return;
+      if (!form || !submitButton || !statusEl) return;
 
       const name = (form.querySelector<HTMLInputElement>("#c-name")?.value ?? "").trim();
       const organizationName = (form.querySelector<HTMLInputElement>("#c-school")?.value ?? "").trim();
