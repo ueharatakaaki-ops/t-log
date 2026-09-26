@@ -4,6 +4,8 @@ import { Resend } from "resend";
 // 送信元のドメイン（tlog-sports.com）はResend側でドメイン認証済みであることが前提。
 const CONTACT_NOTIFICATION_TO = "info@sv-llc.net";
 const CONTACT_NOTIFICATION_FROM = "t-log お問い合わせ通知 <notify@tlog-sports.com>";
+// 問い合わせた人宛の自動返信メールの送信元。送信専用アドレスとして扱う。
+const CONTACT_AUTO_REPLY_FROM = "t-log運営事務局 <notify@tlog-sports.com>";
 
 type ContactInquiry = {
   name: string;
@@ -53,6 +55,53 @@ export async function sendContactNotificationEmail(inquiry: ContactInquiry) {
       inquiry.message,
       "",
       `※このメールにそのまま返信すると、送信者（${inquiry.email}）宛に届きます。`,
+    ].join("\n"),
+  });
+
+  if (error) {
+    throw new Error(`Resend send failed: ${error.name}: ${error.message}`);
+  }
+}
+
+/**
+ * お問い合わせフォームの送信者（inquiry.email）宛に、受付確認の自動返信メールを送る。
+ *
+ * sendContactNotificationEmail と同じく「お知らせ」扱いのため、
+ * 失敗してもフォーム送信自体は成功として扱う。呼び出し側で必ずtry/catchすること。
+ */
+export async function sendContactAutoReplyEmail(inquiry: ContactInquiry) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn(
+      "RESEND_API_KEYが未設定のため、お問い合わせの自動返信メール送信をスキップしました。"
+    );
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+
+  const { error } = await resend.emails.send({
+    from: CONTACT_AUTO_REPLY_FROM,
+    to: inquiry.email,
+    subject: "【t-log】お問い合わせありがとうございます",
+    text: [
+      `${inquiry.name} 様`,
+      "",
+      "この度はt-logへお問い合わせいただき、誠にありがとうございます。",
+      "以下の内容で承りました。担当者より2〜3営業日以内にご連絡いたしますので、",
+      "今しばらくお待ちください。",
+      "",
+      "―――――――――――――",
+      `お名前: ${inquiry.name}`,
+      `スクール名・団体名: ${inquiry.organizationName}`,
+      "お問い合わせ内容:",
+      inquiry.message,
+      "―――――――――――――",
+      "",
+      "※このメールは送信専用です。恐れ入りますが、このメールへの返信ではなく、",
+      "担当者からのご連絡をお待ちください。",
+      "",
+      "t-log運営事務局",
     ].join("\n"),
   });
 

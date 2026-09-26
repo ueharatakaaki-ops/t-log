@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { contactInquirySchema } from "@/lib/validations/contact";
-import { sendContactNotificationEmail } from "@/lib/email/contact-notification";
+import {
+  sendContactAutoReplyEmail,
+  sendContactNotificationEmail,
+} from "@/lib/email/contact-notification";
 
 // 製品紹介サイトの「お問い合わせ」フォームから送信された内容を受け取り、
 // contact_inquiriesテーブルに保存する公開APIエンドポイント（認証不要）。
-// 保存に加えて、Resend経由でinfo@sv-llc.net宛に通知メールも送る
-// （lib/email/contact-notification.ts参照）。過去の問い合わせ一覧の
+// 保存に加えて、Resend経由でinfo@sv-llc.net宛の通知メールと、送信者宛の
+// 自動返信メールも送る（lib/email/contact-notification.ts参照）。過去の問い合わせ一覧の
 // 閲覧はSupabaseダッシュボードのテーブルエディタから行う想定
 // （0012マイグレーション参照）。
 export async function POST(request: Request) {
@@ -47,17 +50,24 @@ export async function POST(request: Request) {
     );
   }
 
-  // 通知メールはあくまで「お知らせ」。データの保存自体は既に成功しているため、
-  // メール送信が失敗してもユーザーには成功として返す（ログにだけ残す）。
-  try {
-    await sendContactNotificationEmail({
-      name: parsed.data.name,
-      organizationName: parsed.data.organizationName,
-      email: parsed.data.email,
-      message: parsed.data.message,
-    });
-  } catch (notifyError) {
-    console.error("contact notification email failed:", notifyError);
+  // 通知メール・自動返信メールはあくまで「お知らせ」。データの保存自体は既に
+  // 成功しているため、メール送信が失敗してもユーザーには成功として返す（ログにだけ残す）。
+  // 片方の失敗がもう片方に影響しないよう、並列に送って結果を個別に見る。
+  const inquiry = {
+    name: parsed.data.name,
+    organizationName: parsed.data.organizationName,
+    email: parsed.data.email,
+    message: parsed.data.message,
+  };
+  const [notifyResult, autoReplyResult] = await Promise.allSettled([
+    sendContactNotificationEmail(inquiry),
+    sendContactAutoReplyEmail(inquiry),
+  ]);
+  if (notifyResult.status === "rejected") {
+    console.error("contact notification email failed:", notifyResult.reason);
+  }
+  if (autoReplyResult.status === "rejected") {
+    console.error("contact auto-reply email failed:", autoReplyResult.reason);
   }
 
   return NextResponse.json({ ok: true });
