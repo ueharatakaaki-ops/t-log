@@ -13,8 +13,8 @@ export default function PrivacyPage() {
       <div className="mx-auto max-w-2xl rounded-2xl bg-white p-6 shadow-sm">
         <LegalDocument markdown={PRIVACY_MARKDOWN} />
         <div className="mt-8 border-t border-slate-100 pt-4 text-center">
-          <Link href="/login" className="text-sm font-medium text-[#0F2537] underline">
-            ログイン画面に戻る
+          <Link href="/" className="text-sm font-medium text-[#0F2537] underline">
+            トップページに戻る
           </Link>
         </div>
       </div>
