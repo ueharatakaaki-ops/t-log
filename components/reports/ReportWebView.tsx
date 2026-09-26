@@ -45,7 +45,7 @@ export function ReportWebView({
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 print:max-w-full">
       <div className="rounded-2xl bg-[#0F2537] p-5 text-white print:bg-white print:text-[#0F2537] print:border print:border-[#0F2537]">
-        <p className="text-xs text-emerald-300 print:text-[#00A859]">NLTC Junior Team</p>
+        <p className="text-xs text-emerald-300 print:text-[#00A859]">t-log</p>
         <h1 className="text-lg font-bold">{playerName} — アスリートレポート</h1>
         <p className="text-sm text-slate-300 print:text-slate-600">{periodLabel}</p>
       </div>

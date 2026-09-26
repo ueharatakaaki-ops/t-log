@@ -16,7 +16,7 @@ export function MatchShareCard({ match }: { match: MatchCardDetail }) {
     <div className="aspect-square w-full max-w-md overflow-hidden rounded-2xl bg-[#0F2537] p-8 text-white shadow-lg">
       <div className="flex h-full flex-col justify-between">
         <div>
-          <p className="text-xs font-semibold tracking-widest text-[#00A859]">NLTC JUNIOR TEAM</p>
+          <p className="text-xs font-semibold tracking-widest text-[#00A859]">T-LOG</p>
           <p className="mt-1 text-2xl font-bold">{match.playerName}</p>
         </div>
 
