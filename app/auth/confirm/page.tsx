@@ -36,12 +36,23 @@ const DEFAULT_NEXT = "/auth/set-password";
  * next クエリパラメータをそのまま window.location.href に代入すると、
  * ?next=https://evil.example や ?next=javascript:... のようなリンクを
  * 第三者が作れてしまい、オープンリダイレクト（フィッシング等の踏み台）になる。
- * 自サイト内の相対パス（"/"始まり・"//"は除く）だけを許可する。
+ *
+ * 文字列の先頭（"/"始まり・"//"は除く、等）だけを見て判定すると、
+ * "/\evil.example"（ブラウザがバックスラッシュをスラッシュとして解釈する）や
+ * タブ・改行を挟んだ文字列（URL解釈時に取り除かれる）ですり抜けられてしまう
+ * （ローカルのClaude Codeの指摘により発覚）。
+ * そのため、実際にブラウザが行うのと同じURL解釈を new URL() に行わせたうえで、
+ * 解決後のoriginが自サイトと一致する場合だけ、パス部分を許可する。
  */
 function sanitizeNext(rawNext: string | null): string {
   if (!rawNext) return DEFAULT_NEXT;
-  if (!rawNext.startsWith("/") || rawNext.startsWith("//")) return DEFAULT_NEXT;
-  return rawNext;
+  try {
+    const parsed = new URL(rawNext, window.location.origin);
+    if (parsed.origin !== window.location.origin) return DEFAULT_NEXT;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return DEFAULT_NEXT;
+  }
 }
 
 export default function AuthConfirmPage() {
