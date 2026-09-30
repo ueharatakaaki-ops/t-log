@@ -13,6 +13,14 @@
  *   - migration_duplicates, staging_daily_logs, staging_match_logs, staging_goal_logs
  *     （5〜8月の移行作業用の一時データ。もう不要なためあわせて削除する）
  *
+ * 注意（初回実行時に実際に踏んだ問題）: coach_notes.coach_id と
+ * daily_logs.liked_by_coach_id は coaches を参照しているが ON DELETE CASCADE ではない。
+ * そのため「コーチのアカウントを先に削除→そのコーチが記録したcoach_notes等が
+ * まだ残っている」という順番になるとFK制約で削除が失敗する（アカウント削除の
+ * 実行順はlistUsers()が返す順序に依存し、こちらでは制御していないため）。
+ * これを避けるため、アカウント削除より前に coach_notes を削除し、
+ * daily_logs.liked_by_coach_id をnullにしておく。
+ *
  * 削除しないもの:
  *   - schools（NLTCという学校のレコード自体は残す。ここに新しいユーザーを招待していく）
  *   - contact_inquiries（お問い合わせフォームのデータ。ユーザーアカウントとは無関係のため対象外）
@@ -118,15 +126,40 @@ async function main() {
   await deleteAllRows("staging_goal_logs");
   console.log(`  🗑️  migration_duplicates / staging_* テーブルを削除しました`);
 
-  let successCount = 0;
-  for (const u of users) {
-    const { error } = await adminClient.auth.admin.deleteUser(u.id);
-    if (error) {
-      console.error(`  ❌ ${u.email} の削除に失敗しました: ${error.message}`);
-    } else {
-      successCount++;
+  // coachesをON DELETE CASCADEなしで参照しているテーブルを先に片付けておく。
+  // （アカウント削除の順序次第で「コーチ→まだ残っているcoach_notes等」の順になり、
+  //  FK制約で失敗することがあるため。daily_logs自体はこの後player削除で連動削除される）
+  const { error: unlikeError } = await adminClient
+    .from("daily_logs")
+    .update({ liked_by_coach_id: null })
+    .not("liked_by_coach_id", "is", null);
+  if (unlikeError) throw new Error(`daily_logs.liked_by_coach_idのクリアに失敗しました: ${unlikeError.message}`);
+  await deleteAllRows("coach_notes");
+  console.log(`  🗑️  coach_notes を削除し、daily_logs.liked_by_coach_id をクリアしました`);
+
+  // アカウント削除も、上記と同じ理由で稀に順序依存の失敗をすることがあるため、
+  // 1回失敗したものは他のアカウントが消えた後にもう一度だけ試す
+  async function deleteUsers(list: typeof users): Promise<typeof users> {
+    const failed: typeof users = [];
+    for (const u of list) {
+      const { error } = await adminClient.auth.admin.deleteUser(u.id);
+      if (error) {
+        failed.push(u);
+      }
     }
+    return failed;
   }
+
+  const firstPassFailures = await deleteUsers(users);
+  let finalFailures = firstPassFailures;
+  if (firstPassFailures.length > 0) {
+    finalFailures = await deleteUsers(firstPassFailures);
+  }
+
+  for (const u of finalFailures) {
+    console.error(`  ❌ ${u.email} の削除に失敗しました（再試行後も失敗）`);
+  }
+  const successCount = users.length - finalFailures.length;
 
   console.log(`\n✅ ${successCount} / ${users.length} 件のアカウントを削除しました（関連データも連動削除済み）。`);
   console.log(`\n続けて "npm run bootstrap:system-admin" を実行し、最初のシステム管理者アカウントを作成してください。`);
