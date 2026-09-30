@@ -33,6 +33,8 @@ npm run test:rls:cleanup
 | 9 | コーチは`draft`状態のレポートも閲覧できる |
 | 10 | 選手は他選手のDaily Logを更新できない（UPDATE時もRLSが効くこと） |
 | 11 | 選手は自分の`players`レコードを直接更新できない（プロフィール改ざん防止） |
+| 12 | コーチ（staff）は他スクールの選手を自校の`coach_player_links`に紐付けられない（school越境防止） |
+| 13 | コーチ（staff）は他スクールの`parent_player_links`行を横断的に閲覧できない（school越境防止） |
 
 いずれかが失敗した場合、スクリプトは失敗したテスト名とともに終了コード1で終了します。
 CI（GitHub Actions等）に組み込み、マイグレーション変更時に自動実行することを推奨します。

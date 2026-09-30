@@ -11,6 +11,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { createClient } from "@supabase/supabase-js";
+import { adminClient } from "../migration/client";
 import { TEST_EMAILS } from "./seed-test-users";
 
 const TEST_PASSWORD = "TestPassw0rd!2026";
@@ -48,12 +49,15 @@ async function main() {
   const parentA = await signInAs(TEST_EMAILS.parentA);
   const parentB = await signInAs(TEST_EMAILS.parentB);
   const coachA = await signInAs(TEST_EMAILS.coachA);
+  const playerC = await signInAs(TEST_EMAILS.playerC); // 別スクール（RLS_TEST_SCHOOL_B）所属
 
   // player_idはテストユーザー自身のauth.uidと一致する（players.id = app_users.id = auth.users.id）
   const { data: aUser } = await playerA.auth.getUser();
   const { data: bUser } = await playerB.auth.getUser();
+  const { data: cUser } = await playerC.auth.getUser();
   const playerAId = aUser.user!.id;
   const playerBId = bUser.user!.id;
+  const playerCId = cUser.user!.id;
 
   await check("PLAYER_A は自分のdaily_logsを閲覧できる", async () => {
     const { data, error } = await playerA.from("daily_logs").select("*").eq("player_id", playerAId).eq("log_date", "2099-01-01");
@@ -138,6 +142,44 @@ async function main() {
     if (error) throw error;
     assert.equal(data?.length, 0, `期待: 0件（更新できてはいけない）, 実際: ${data?.length}`);
   });
+
+  const { data: coachAUser } = await coachA.auth.getUser();
+  const coachAId = coachAUser.user!.id;
+
+  await check(
+    "COACH_A（staff）は他スクール（RLS_TEST_SCHOOL_B）の選手を自校のcoach_player_linksに紐付けられない（0013で修正した越境バグの回帰テスト）",
+    async () => {
+      const { data, error } = await coachA
+        .from("coach_player_links")
+        .insert({ coach_id: coachAId, player_id: playerCId })
+        .select();
+      // RLSのwith checkに阻まれ、INSERT自体がポリシー違反エラーになることを期待する。
+      // 万一エラーにならず素通りした場合は、必ず後始末（削除）してから失敗させる。
+      if (!error && data && data.length > 0) {
+        // service_role（adminClient）はRLSをバイパスできるため、後始末の削除に使える
+        await adminClient.from("coach_player_links").delete().eq("coach_id", coachAId).eq("player_id", playerCId);
+        assert.fail("他スクールの選手をcoach_player_linksに紐付けできてしまった（school越境）");
+      }
+      if (error) {
+        assert.match(error.message, /row-level security|policy/i, `期待: RLS違反エラー, 実際: ${error.message}`);
+      }
+    }
+  );
+
+  await check(
+    "COACH_A（staff）は他スクール（RLS_TEST_SCHOOL_B）のparent_player_links行を横断的に閲覧できない（越境バグの回帰テスト）",
+    async () => {
+      // TEST_PARENT_C×TEST_PLAYER_C（ともにRLS_TEST_SCHOOL_B所属）の紐付けは
+      // seed-test-users.tsで実際に1行作成済み。school越境チェック追加前は、
+      // parent_links_select側のstaff判定が「u.school_id = current_school_id()」
+      // という常に真になる比較だったため、is_staff()というだけでOR結合され
+      // 全校の行が見えてしまっていた（行自体が存在すれば0件になるのは
+      // 修正が効いている場合のみ）。
+      const { data, error } = await coachA.from("parent_player_links").select("*").eq("player_id", playerCId);
+      if (error) throw error;
+      assert.equal(data?.length, 0, `期待: 0件（他校のリンクが見えてはいけない）, 実際: ${data?.length}`);
+    }
+  );
 
   const passCount = results.filter((r) => r.pass).length;
   console.log(`\n=== 結果: ${passCount}/${results.length} 件 PASS ===`);

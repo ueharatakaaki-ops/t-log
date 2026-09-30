@@ -22,6 +22,14 @@ async function main() {
   }
 
   console.log(`✅ ${targets.length} 件のテストユーザーを削除しました`);
+
+  // school越境テスト用に作成したテストスクールBも削除する（NLTCは削除しない）
+  const { error: schoolError } = await adminClient.from("schools").delete().eq("slug", "rls-test-school-b");
+  if (schoolError) {
+    console.error(`❌ テスト用スクールBの削除に失敗: ${schoolError.message}`);
+  } else {
+    console.log("🗑️  テスト用スクールB（rls-test-school-b）を削除しました");
+  }
 }
 
 main().catch((err) => {
