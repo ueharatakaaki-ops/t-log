@@ -139,12 +139,14 @@ async function main() {
 
   // アカウント削除も、上記と同じ理由で稀に順序依存の失敗をすることがあるため、
   // 1回失敗したものは他のアカウントが消えた後にもう一度だけ試す
-  async function deleteUsers(list: typeof users): Promise<typeof users> {
-    const failed: typeof users = [];
+  type DeleteFailure = { user: (typeof users)[number]; message: string };
+
+  async function deleteUsers(list: typeof users): Promise<DeleteFailure[]> {
+    const failed: DeleteFailure[] = [];
     for (const u of list) {
       const { error } = await adminClient.auth.admin.deleteUser(u.id);
       if (error) {
-        failed.push(u);
+        failed.push({ user: u, message: error.message });
       }
     }
     return failed;
@@ -153,11 +155,11 @@ async function main() {
   const firstPassFailures = await deleteUsers(users);
   let finalFailures = firstPassFailures;
   if (firstPassFailures.length > 0) {
-    finalFailures = await deleteUsers(firstPassFailures);
+    finalFailures = await deleteUsers(firstPassFailures.map((f) => f.user));
   }
 
-  for (const u of finalFailures) {
-    console.error(`  ❌ ${u.email} の削除に失敗しました（再試行後も失敗）`);
+  for (const f of finalFailures) {
+    console.error(`  ❌ ${f.user.email} の削除に失敗しました（再試行後も失敗）: ${f.message}`);
   }
   const successCount = users.length - finalFailures.length;
 
