@@ -42,14 +42,23 @@ const DEFAULT_NEXT = "/auth/set-password";
  * タブ・改行を挟んだ文字列（URL解釈時に取り除かれる）ですり抜けられてしまう
  * （ローカルのClaude Codeの指摘により発覚）。
  * そのため、実際にブラウザが行うのと同じURL解釈を new URL() に行わせたうえで、
- * 解決後のoriginが自サイトと一致する場合だけ、パス部分を許可する。
+ * 解決後のoriginが自サイトと一致する場合だけ許可する。
+ *
+ * 戻り値は pathname+search+hash を文字列連結したものではなく、必ず
+ * parsed.href（origin一致を確認済みの絶対URL）を返すこと。連結した文字列を
+ * window.location.href に代入すると、その文字列が改めてブラウザに解釈され
+ * 直される。"/.//evil.example" のような入力は、new URL()の時点では
+ * originが自サイトのまま正規化されるが、pathnameだけ取り出すと
+ * "//evil.example" になり、代入時にプロトコル相対URLとして外部サイトに
+ * 飛んでしまう（ローカルのClaude Codeの指摘により発覚）。href全体を
+ * 返せば、この二重解釈の余地がなくなる。
  */
 function sanitizeNext(rawNext: string | null): string {
   if (!rawNext) return DEFAULT_NEXT;
   try {
     const parsed = new URL(rawNext, window.location.origin);
     if (parsed.origin !== window.location.origin) return DEFAULT_NEXT;
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    return parsed.href;
   } catch {
     return DEFAULT_NEXT;
   }
