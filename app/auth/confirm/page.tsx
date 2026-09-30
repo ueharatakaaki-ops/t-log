@@ -30,6 +30,20 @@ type ConfirmParams = {
   next: string;
 };
 
+const DEFAULT_NEXT = "/auth/set-password";
+
+/**
+ * next クエリパラメータをそのまま window.location.href に代入すると、
+ * ?next=https://evil.example や ?next=javascript:... のようなリンクを
+ * 第三者が作れてしまい、オープンリダイレクト（フィッシング等の踏み台）になる。
+ * 自サイト内の相対パス（"/"始まり・"//"は除く）だけを許可する。
+ */
+function sanitizeNext(rawNext: string | null): string {
+  if (!rawNext) return DEFAULT_NEXT;
+  if (!rawNext.startsWith("/") || rawNext.startsWith("//")) return DEFAULT_NEXT;
+  return rawNext;
+}
+
 export default function AuthConfirmPage() {
   const [params, setParams] = useState<ConfirmParams | null>(null);
   const [status, setStatus] = useState<"idle" | "pending" | "error">("idle");
@@ -39,7 +53,7 @@ export default function AuthConfirmPage() {
     const url = new URL(window.location.href);
     const tokenHash = url.searchParams.get("token_hash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
-    const next = url.searchParams.get("next") ?? "/auth/set-password";
+    const next = sanitizeNext(url.searchParams.get("next"));
 
     if (!tokenHash || !type) {
       setStatus("error");
