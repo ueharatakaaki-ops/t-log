@@ -19,6 +19,14 @@ enable_signup = false          # 選手・保護者のセルフサインアッ�
 [auth.email]
 enable_signup = false
 enable_confirmations = true
+# 招待メール・パスワード再設定メールのリンクが短時間で切れてしまう問題への対応。
+# デフォルトは3600秒（1時間）だが、招待されたコーチ・保護者がすぐにメールを
+# 開けるとは限らないため24時間に延長する。この設定は招待専用ではなく、
+# マジックリンク・確認メール等メール経由のリンク全般に共通で適用される点に注意。
+# ※ このファイルはローカル開発（supabase start）用の設定であり、本番の
+#   実際の値はSupabaseダッシュボード（Authentication > Sign In / Providers >
+#   Auth Providers > Email > Email OTP expiration）側で別途86400に設定する必要がある。
+otp_expiry = 86400
 
 [auth.sms]
 enable_signup = false
