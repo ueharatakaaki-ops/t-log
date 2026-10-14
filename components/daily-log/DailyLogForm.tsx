@@ -125,7 +125,18 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
     if (!parsed || !parsed.success) return;
     setSubmitError(null);
     startTransition(async () => {
-      const result = await submitDailyLog(parsed.data);
+      let result: Awaited<ReturnType<typeof submitDailyLog>>;
+      try {
+        result = await submitDailyLog(parsed.data);
+      } catch {
+        // 通信断・ログイン切れ等でServer Action自体の呼び出しが失敗した場合。
+        // 例外のままだと画面全体がエラー表示に切り替わるため、ここで受け止める
+        // （入力内容はlocalStorageの下書きに残っている）
+        setSubmitError(
+          "送信できませんでした。電波の良い場所で再読み込みしてから、もう一度お試しください（入力内容は保存されています）"
+        );
+        return;
+      }
       if (!result.ok) {
         setSubmitError(result.error);
         return;

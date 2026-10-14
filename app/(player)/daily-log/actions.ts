@@ -80,6 +80,8 @@ export async function submitDailyLog(input: DailyLogInput): Promise<SubmitDailyL
   );
 
   if (error) {
+    // 原因調査用。個人情報・トークン・player_idは出さず、コードとメッセージのみ
+    console.error("submitDailyLog upsert failed", error.code, error.message);
     return { ok: false, error: "保存に失敗しました。時間をおいて再度お試しください" };
   }
 
@@ -97,12 +99,14 @@ export async function getTodaysDailyLog(logDate: string) {
 
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("daily_logs")
     .select("*")
     .eq("player_id", user.id)
     .eq("log_date", logDate)
     .maybeSingle();
+
+  if (error) console.error("getTodaysDailyLog failed", error.code, error.message);
 
   return data;
 }
@@ -120,11 +124,13 @@ export async function getExistingDailyLogDates(dates: string[]): Promise<Set<str
 
   if (!user) return new Set();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("daily_logs")
     .select("log_date")
     .eq("player_id", user.id)
     .in("log_date", dates);
+
+  if (error) console.error("getExistingDailyLogDates failed", error.code, error.message);
 
   return new Set((data ?? []).map((row) => row.log_date as string));
 }
