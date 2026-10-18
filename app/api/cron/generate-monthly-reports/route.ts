@@ -19,10 +19,13 @@ export async function GET(request: NextRequest) {
   const targetMonth = defaultReportTargetMonth(); // "YYYY-MM-01"（先月分）
   const admin = createAdminClient();
 
+  // 営業デモ用のスクール（plan = 'demo'。scripts/demo 参照）は対象外にする。
+  // デモの選手にまで毎月AIでレポート文面を生成すると、不要な費用がかかるため。
   const { data: players, error } = await admin
     .from("players")
-    .select("id, school_id")
-    .eq("status", "active");
+    .select("id, school_id, schools!inner(plan)")
+    .eq("status", "active")
+    .neq("schools.plan", "demo");
 
   if (error) {
     return NextResponse.json({ error: "選手一覧の取得に失敗しました" }, { status: 500 });
