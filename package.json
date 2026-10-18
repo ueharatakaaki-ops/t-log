@@ -21,7 +21,10 @@
     "reset:full-before-launch": "tsx scripts/migration/09-full-reset-before-launch.ts",
     "test:rls:seed": "tsx scripts/security/seed-test-users.ts",
     "test:rls": "tsx scripts/security/rls-tests.ts",
-    "test:rls:cleanup": "tsx scripts/security/cleanup-test-users.ts"
+    "test:rls:cleanup": "tsx scripts/security/cleanup-test-users.ts",
+    "demo:seed": "tsx scripts/demo/seed-demo-school.ts",
+    "demo:cleanup": "tsx scripts/demo/cleanup-demo-school.ts",
+    "demo:verify": "tsx scripts/demo/verify-demo-school.ts"
   },
   "dependencies": {
     "next": "^15.0.0",
