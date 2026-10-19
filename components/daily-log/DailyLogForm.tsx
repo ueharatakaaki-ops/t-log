@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { NumberScale } from "./NumberScale";
 import { SleepChips } from "./SleepChips";
 import { PainSection } from "./PainSection";
 import { PracticeSection } from "./PracticeSection";
 import { NotesSection } from "./NotesSection";
-import { submitDailyLog } from "@/app/(player)/daily-log/actions";
 import { dailyLogSchema } from "@/lib/validations/daily-log";
+import { pingConnection, resilientPostJson, type ResilientPostOutcome } from "@/lib/client/resilient-post";
 
 type DailyLogFormProps = {
   logDate: string; // "YYYY-MM-DD"（対象日はサーバー側で固定して渡す。選手が任意の日付を選べる必要はない）
@@ -25,10 +27,15 @@ type DailyLogFormProps = {
 };
 
 const DRAFT_KEY_PREFIX = "t-log:daily-log-draft:";
+// 「送信を押したが、成功が確認できていない」印。画面が開いている間に通信が戻ったら自動で再送する
+const PENDING_KEY_PREFIX = "t-log:daily-log-pending:";
 
-// 通信が途中で止まるとServer Actionの返事が戻らず「送信中...」のまま固まるため、
-// この時間で見切りをつけてボタンを再び押せるようにする
-const SUBMIT_TIMEOUT_MS = 20_000;
+const GAVE_UP_MESSAGE =
+  "送信できませんでした。入力した内容は残っています。電波の良い場所で、もう一度『記録する』を押してください。（画面を再読み込みして『入力済み』になっていれば保存されています）";
+
+type SubmitNotice = { kind: "error"; message: string } | { kind: "auth" } | null;
+
+type DailyLogApiResponse = { ok: boolean; error?: string; fieldErrors?: Record<string, string[]> };
 
 export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormProps) {
   const [sleepHours, setSleepHours] = useState<number | null>(initial?.sleepHours ?? null);
@@ -40,13 +47,21 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
   const [selfScore, setSelfScore] = useState<number | null>(initial?.selfScore ?? null);
   const [notes, setNotes] = useState(initial?.notes ?? "");
 
-  const [isPending, startTransition] = useTransition();
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const router = useRouter();
+  const [sending, setSending] = useState(false);
+  // 何回目の試行中か（2回目以降は「再試行しています(2/3)」を出す）
+  const [attempt, setAttempt] = useState<{ n: number; total: number } | null>(null);
+  const [notice, setNotice] = useState<SubmitNotice>(null);
   const [submitted, setSubmitted] = useState(false);
-  // タイムアウト後に遅れて届いた成功と、再送の成功が重なっても成功処理を一度だけにするためのフラグ
+  // 二重の同時送信を防ぐ（ボタン連打や、自動再送とボタンの重なり）
+  const inFlightRef = useRef(false);
+  // 送信ごとの通し番号。古い送信の結果が後から届いても画面に反映しないため
+  const submitSeqRef = useRef(0);
+  // 成功処理を一度だけにするためのフラグ。新しい送信を始めるたびにリセットする
   const successHandledRef = useRef(false);
 
   const draftKey = `${DRAFT_KEY_PREFIX}${logDate}`;
+  const pendingKey = `${PENDING_KEY_PREFIX}${logDate}`;
 
   // 電波が悪い環境向けに、未送信の入力内容を端末に一時保存しておく
   useEffect(() => {
@@ -125,7 +140,28 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
     });
   }, [logDate, sleepHours, fatigueLevel, hasPain, painLocations, hasPractice, practiceIntensity, selfScore, notes]);
 
-  const canSubmit = parsed?.success === true && !isPending;
+  // online / visibilitychange のイベントから最新の入力内容を参照するため
+  const parsedRef = useRef(parsed);
+  parsedRef.current = parsed;
+
+  const canSubmit = parsed?.success === true && !sending;
+
+  function setPendingFlag(on: boolean) {
+    try {
+      if (on) window.localStorage.setItem(pendingKey, "1");
+      else window.localStorage.removeItem(pendingKey);
+    } catch {
+      // ストレージが使えない端末では自動再送しないだけ
+    }
+  }
+
+  function hasPendingFlag(): boolean {
+    try {
+      return window.localStorage.getItem(pendingKey) === "1";
+    } catch {
+      return false;
+    }
+  }
 
   function handleSuccess() {
     if (successHandledRef.current) return;
@@ -135,53 +171,102 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
     } catch {
       // 無視してよい
     }
-    setSubmitError(null);
+    setPendingFlag(false);
+    setNotice(null);
     setSubmitted(true);
+    // Server Action と違い、fetch では画面のキャッシュ（入力済み表示など）が自動で更新されないため
+    router.refresh();
   }
 
-  function handleSubmit() {
-    if (!parsed || !parsed.success) return;
-    setSubmitError(null);
-    startTransition(async () => {
-      const request = submitDailyLog(parsed.data);
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
-      const timeout = new Promise<"timeout">((resolve) => {
-        timeoutId = setTimeout(() => resolve("timeout"), SUBMIT_TIMEOUT_MS);
+  // 送信本体。POST /api/daily-log は player_id + log_date の upsert（同一内容の再送も ok）なので、
+  // 打ち切り後の再試行で二重に届いても問題ない。再試行の方針は lib/client/resilient-post.ts を参照。
+  async function send() {
+    const current = parsedRef.current;
+    if (!current || !current.success) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    const seq = ++submitSeqRef.current;
+    successHandledRef.current = false;
+    setPendingFlag(true);
+    setSending(true);
+    setAttempt(null);
+    setNotice(null);
+
+    let outcome: ResilientPostOutcome<DailyLogApiResponse>;
+    try {
+      outcome = await resilientPostJson<DailyLogApiResponse>("/api/daily-log", current.data, {
+        onAttempt: (n, total) => {
+          if (seq === submitSeqRef.current) setAttempt({ n, total });
+        },
       });
-      let result: Awaited<ReturnType<typeof submitDailyLog>> | "timeout";
-      try {
-        result = await Promise.race([request, timeout]);
-      } catch {
-        // 通信断・ログイン切れ等でServer Action自体の呼び出しが失敗した場合。
-        // 例外のままだと画面全体がエラー表示に切り替わるため、ここで受け止める
-        // （入力内容はlocalStorageの下書きに残っている）
-        setSubmitError("送信できませんでした。電波の良い場所で再読み込みしてから、もう一度お試しください");
-        return;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-      if (result === "timeout") {
-        // サーバー側では保存できていても返事だけ届かないことがある。
-        // 再送は upsert(player_id, log_date) なので二重登録にはならず安全。
-        // 下書きは実際に保存できたか分からないため、ここでは消さない
-        console.error("submitDailyLog timed out", { timeoutMs: SUBMIT_TIMEOUT_MS });
-        setSubmitError(
-          "通信に時間がかかっています。電波の良い場所で、もう一度送信してください。すでに保存されている場合もあるので、画面を再読み込みして『入力済み』になっているかも確認してください"
-        );
-        // 遅れて成功の返事が届いたら、通常の成功時と同じ処理を行う（失敗・例外は表示済みのエラーのままにする）
-        request
-          .then((late) => {
-            if (late.ok) handleSuccess();
-          })
-          .catch(() => {});
-        return;
-      }
-      if (!result.ok) {
-        setSubmitError(result.error);
-        return;
-      }
+    } catch {
+      // resilientPostJson は通常例外を投げないが、念のため送信を諦めた扱いにする
+      outcome = { kind: "gave_up", attempts: [] };
+    } finally {
+      inFlightRef.current = false;
+    }
+
+    if (seq !== submitSeqRef.current) return;
+    setSending(false);
+    setAttempt(null);
+
+    if (outcome.kind === "ok") {
       handleSuccess();
-    });
+      return;
+    }
+    if (outcome.kind === "http_error") {
+      if (outcome.status === 401) {
+        // 未送信の印は残す（別タブで再ログインして戻ってきたら、自動で再送される）
+        setNotice({ kind: "auth" });
+        return;
+      }
+      // 400・403・409 は再送しても結果が変わらないため、自動再送の対象から外す
+      setPendingFlag(false);
+      setNotice({ kind: "error", message: outcome.data?.error ?? GAVE_UP_MESSAGE });
+      return;
+    }
+    console.error("daily-log submit gave up", outcome.attempts);
+    setNotice({ kind: "error", message: GAVE_UP_MESSAGE });
+  }
+
+  // 画面を開き直した時点で既に保存済み（initial あり）なら、前回の未送信の印は不要
+  useEffect(() => {
+    if (initial) setPendingFlag(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 画面が再び見えた・オンラインに戻ったときは、切れた接続を作り直すため軽い疎通確認を送り、
+  // 未送信の印があれば自動で1回だけ再送する（送信中なら再送しない）
+  useEffect(() => {
+    let reconnecting = false;
+    async function onReconnect() {
+      if (reconnecting) return;
+      reconnecting = true;
+      try {
+        await pingConnection();
+        if (!hasPendingFlag() || inFlightRef.current || successHandledRef.current) return;
+        await send();
+      } finally {
+        reconnecting = false;
+      }
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") void onReconnect();
+    }
+    function onOnline() {
+      void onReconnect();
+    }
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleSubmit() {
+    void send();
   }
 
   if (submitted) {
@@ -250,9 +335,17 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
 
       <NotesSection notes={notes} onNotesChange={setNotes} />
 
-      {submitError && (
-        <p className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">
-          {submitError}
+      {notice?.kind === "error" && (
+        <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">
+          {notice.message}
+        </p>
+      )}
+      {notice?.kind === "auth" && (
+        <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">
+          ログインが切れました。再ログインしてください（入力した内容は残っています）。{" "}
+          <Link href="/login" className="font-bold underline">
+            ログイン画面へ
+          </Link>
         </p>
       )}
 
@@ -261,6 +354,11 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
           真上に重なるようにするための値。bottom-0のままだとBottomNav（z-10）の
           下に隠れてボタンが押せなくなってしまう。 */}
       <div className="fixed inset-x-0 bottom-16 z-20 mx-auto max-w-md border-t border-slate-100 bg-white/95 p-4 backdrop-blur">
+        {sending && attempt && attempt.n >= 2 && (
+          <p role="status" className="mb-2 text-center text-sm font-medium text-amber-700">
+            通信が不安定です。再試行しています({attempt.n}/{attempt.total})
+          </p>
+        )}
         <button
           type="button"
           disabled={!canSubmit}
@@ -272,7 +370,7 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
               : "cursor-not-allowed bg-slate-200 text-slate-400",
           ].join(" ")}
         >
-          {isPending ? "送信中..." : "記録する"}
+          {sending ? "送信中…" : "記録する"}
         </button>
       </div>
     </div>
