@@ -68,6 +68,7 @@ export default function AuthConfirmPage() {
   const [params, setParams] = useState<ConfirmParams | null>(null);
   const [status, setStatus] = useState<"idle" | "pending" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -86,6 +87,7 @@ export default function AuthConfirmPage() {
     if (!params?.tokenHash || !params.type) return;
     setStatus("pending");
     setErrorMessage(null);
+    setErrorDetail(null);
 
     const supabase = createClient();
     const { error } = await supabase.auth.verifyOtp({ type: params.type, token_hash: params.tokenHash });
@@ -109,7 +111,16 @@ export default function AuthConfirmPage() {
       return;
     }
 
+    // 通信失敗・端末側の問題・本当の期限切れを区別できるよう、原因調査に必要な情報だけを小さく表示する。
+    // token_hash・URL・メールアドレスは含めない（message に混ざりうるURLのクエリ文字列も除去する）。
+    // 時刻はボタン押下後にクライアント側でのみ生成するが、error.tsx と同様に suppressHydrationWarning を付けておく。
+    const occurredAt = new Date().toLocaleTimeString("sv-SE", { timeZone: "Asia/Tokyo" });
+    const message = (error.message ?? "").replace(/\?\S*/g, "").slice(0, 80);
+    const detail = `詳細: ${error.name} / ${error.status ?? "-"} / ${error.code ?? "-"} / ${message} / ${occurredAt}`;
+    console.error("verifyOtp failed", detail);
+
     setStatus("error");
+    setErrorDetail(detail);
     setErrorMessage(
       "このリンクはすでに使用されたか、有効期限が切れています。お手数ですが、管理者に再度招待（またはパスワード再設定）を依頼してください。"
     );
@@ -124,9 +135,16 @@ export default function AuthConfirmPage() {
         <h1 className="mb-1 text-2xl font-bold text-[#0F2537]">t-log</h1>
 
         {status === "error" ? (
-          <p className="mt-6 rounded-xl bg-rose-50 p-4 text-sm font-medium leading-relaxed text-rose-700">
-            {errorMessage}
-          </p>
+          <>
+            <p className="mt-6 rounded-xl bg-rose-50 p-4 text-sm font-medium leading-relaxed text-rose-700">
+              {errorMessage}
+            </p>
+            {errorDetail && (
+              <p className="mt-3 break-all text-xs text-slate-400" suppressHydrationWarning>
+                {errorDetail}
+              </p>
+            )}
+          </>
         ) : (
           <>
             <p className="mb-8 text-sm leading-relaxed text-slate-500">
