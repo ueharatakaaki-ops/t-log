@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { NumberScale } from "./NumberScale";
 import { SleepChips } from "./SleepChips";
 import { PainSection } from "./PainSection";
@@ -26,6 +26,10 @@ type DailyLogFormProps = {
 
 const DRAFT_KEY_PREFIX = "t-log:daily-log-draft:";
 
+// 通信が途中で止まるとServer Actionの返事が戻らず「送信中...」のまま固まるため、
+// この時間で見切りをつけてボタンを再び押せるようにする
+const SUBMIT_TIMEOUT_MS = 20_000;
+
 export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormProps) {
   const [sleepHours, setSleepHours] = useState<number | null>(initial?.sleepHours ?? null);
   const [fatigueLevel, setFatigueLevel] = useState<number | null>(initial?.fatigueLevel ?? null);
@@ -39,6 +43,8 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
   const [isPending, startTransition] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  // タイムアウト後に遅れて届いた成功と、再送の成功が重なっても成功処理を一度だけにするためのフラグ
+  const successHandledRef = useRef(false);
 
   const draftKey = `${DRAFT_KEY_PREFIX}${logDate}`;
 
@@ -121,32 +127,60 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
 
   const canSubmit = parsed?.success === true && !isPending;
 
+  function handleSuccess() {
+    if (successHandledRef.current) return;
+    successHandledRef.current = true;
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch {
+      // 無視してよい
+    }
+    setSubmitError(null);
+    setSubmitted(true);
+  }
+
   function handleSubmit() {
     if (!parsed || !parsed.success) return;
     setSubmitError(null);
     startTransition(async () => {
-      let result: Awaited<ReturnType<typeof submitDailyLog>>;
+      const request = submitDailyLog(parsed.data);
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<"timeout">((resolve) => {
+        timeoutId = setTimeout(() => resolve("timeout"), SUBMIT_TIMEOUT_MS);
+      });
+      let result: Awaited<ReturnType<typeof submitDailyLog>> | "timeout";
       try {
-        result = await submitDailyLog(parsed.data);
+        result = await Promise.race([request, timeout]);
       } catch {
         // 通信断・ログイン切れ等でServer Action自体の呼び出しが失敗した場合。
         // 例外のままだと画面全体がエラー表示に切り替わるため、ここで受け止める
         // （入力内容はlocalStorageの下書きに残っている）
+        setSubmitError("送信できませんでした。電波の良い場所で再読み込みしてから、もう一度お試しください");
+        return;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      if (result === "timeout") {
+        // サーバー側では保存できていても返事だけ届かないことがある。
+        // 再送は upsert(player_id, log_date) なので二重登録にはならず安全。
+        // 下書きは実際に保存できたか分からないため、ここでは消さない
+        console.error("submitDailyLog timed out", { timeoutMs: SUBMIT_TIMEOUT_MS });
         setSubmitError(
-          "送信できませんでした。電波の良い場所で再読み込みしてから、もう一度お試しください（入力内容は保存されています）"
+          "通信に時間がかかっています。電波の良い場所で、もう一度送信してください。すでに保存されている場合もあるので、画面を再読み込みして『入力済み』になっているかも確認してください"
         );
+        // 遅れて成功の返事が届いたら、通常の成功時と同じ処理を行う（失敗・例外は表示済みのエラーのままにする）
+        request
+          .then((late) => {
+            if (late.ok) handleSuccess();
+          })
+          .catch(() => {});
         return;
       }
       if (!result.ok) {
         setSubmitError(result.error);
         return;
       }
-      try {
-        window.localStorage.removeItem(draftKey);
-      } catch {
-        // 無視してよい
-      }
-      setSubmitted(true);
+      handleSuccess();
     });
   }
 
