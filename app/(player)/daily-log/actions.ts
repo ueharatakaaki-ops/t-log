@@ -2,87 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { dailyLogSchema, type DailyLogInput } from "@/lib/validations/daily-log";
-import { isDailyLogEditable, todayInJst } from "@/lib/date";
+import type { DailyLogInput } from "@/lib/validations/daily-log";
+import { saveDailyLog } from "@/lib/daily-log/save";
 
 export type SubmitDailyLogResult =
   | { ok: true }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
+// 現在の画面は POST /api/daily-log（app/api/daily-log/route.ts）で送信する。
+// この Server Action は、デプロイ前から開かれたままの古い画面が呼び出すため残している（削除しないこと）。
+// 保存処理の本体は lib/daily-log/save.ts にある。
 export async function submitDailyLog(input: DailyLogInput): Promise<SubmitDailyLogResult> {
-  const parsed = dailyLogSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: "入力内容を確認してください",
-      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
-  }
-
-  const d = parsed.data;
-
-  if (d.logDate > todayInJst()) {
-    return { ok: false, error: "未来の日付は記録できません" };
-  }
-
   const supabase = await createClient();
+  const result = await saveDailyLog(supabase, input);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { ok: false, error: "ログインが必要です" };
-  }
-
-  const { data: appUser, error: appUserError } = await supabase
-    .from("app_users")
-    .select("id, school_id, role")
-    .eq("id", user.id)
-    .single();
-
-  if (appUserError || !appUser || appUser.role !== "player") {
-    return { ok: false, error: "選手アカウントでログインしてください" };
-  }
-
-  // 「まだ記録がない日」は、書き忘れの救済のため期限を過ぎていてもいつでも入力できる。
-  // 一方「既に記録済みの日」を後から書き換えるのは、これまで通り
-  // 「対象日の翌日9:00(JST)」までに制限する（コーチが見た後の後出し修正を防ぐため）。
-  const { data: existingLog } = await supabase
-    .from("daily_logs")
-    .select("id")
-    .eq("player_id", appUser.id)
-    .eq("log_date", d.logDate)
-    .maybeSingle();
-
-  if (existingLog && !isDailyLogEditable(d.logDate)) {
-    return { ok: false, error: "この日の記録は修正期限（翌日の朝9時）を過ぎているため修正できません" };
-  }
-
-  // player_id + log_date のUNIQUE制約を利用し、当日分は upsert（未入力→入力後の修正にも対応）
-  const { error } = await supabase.from("daily_logs").upsert(
-    {
-      player_id: appUser.id,
-      school_id: appUser.school_id,
-      log_date: d.logDate,
-      sleep_hours: d.sleepHours,
-      fatigue_level: d.fatigueLevel,
-      has_pain: d.hasPain,
-      pain_locations: d.hasPain ? d.painLocations : [],
-      has_practice: d.hasPractice,
-      practice_intensity: d.hasPractice ? d.practiceIntensity : null,
-      self_score: d.selfScore,
-      notes: d.notes || null,
-      coach_message: d.coachMessage || null,
-      source: "app",
-    },
-    { onConflict: "player_id,log_date" }
-  );
-
-  if (error) {
-    // 原因調査用。個人情報・トークン・player_idは出さず、コードとメッセージのみ
-    console.error("submitDailyLog upsert failed", error.code, error.message);
-    return { ok: false, error: "保存に失敗しました。時間をおいて再度お試しください" };
+  if (!result.ok) {
+    return { ok: false, error: result.error, fieldErrors: result.fieldErrors };
   }
 
   revalidatePath("/daily-log");
