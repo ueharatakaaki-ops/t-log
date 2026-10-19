@@ -132,3 +132,20 @@ export function computeSchoolGrade(birthdate: string | null | undefined, asOf?: 
   if (gradeNumber <= 12) return { label: `高校${gradeNumber - 9}年`, stage: "high_school" };
   return { label: "卒業", stage: "graduated" };
 }
+
+/** 管理画面の日時表示用（例: "10/20 21:05"）。日時が無ければ "なし" */
+export function formatJstDateTime(iso: string | null | undefined): string {
+  if (!iso) return "なし";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "なし";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("month")}/${get("day")} ${get("hour")}:${get("minute")}`;
+}

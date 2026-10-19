@@ -4,6 +4,7 @@ import { getUserDetail } from "@/lib/queries/admin-users";
 import { EditUserRoleForm } from "@/components/admin/EditUserRoleForm";
 import { EditPlayerBirthdateForm } from "@/components/admin/EditPlayerBirthdateForm";
 import { SendPasswordResetButton } from "@/components/admin/SendPasswordResetButton";
+import { AccountAccessPanel } from "@/components/admin/AccountAccessPanel";
 
 const ROLE_LABEL: Record<string, string> = {
   system_admin: "システム管理者",
@@ -38,6 +39,8 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           </p>
         )}
       </div>
+
+      <AccountAccessPanel userId={user.id} displayName={user.displayName} auth={user.auth} />
 
       <SendPasswordResetButton userId={user.id} displayName={user.displayName} />
     </main>

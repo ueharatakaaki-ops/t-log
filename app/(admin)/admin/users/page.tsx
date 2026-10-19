@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getSchoolUsers } from "@/lib/queries/admin-users";
+import { formatJstDateTime } from "@/lib/date";
 
 const ROLE_LABEL: Record<string, string> = {
   system_admin: "システム管理者",
@@ -20,6 +21,8 @@ export default async function AdminUsersPage() {
     return acc;
   }, {});
   const adminCount = (counts.school_admin ?? 0) + (counts.system_admin ?? 0);
+  // 招待したまま登録が済んでいない人（メールが届かない・リンクが開けない等で止まっている可能性がある）
+  const unregisteredCount = users.filter((u) => u.auth && !u.auth.registered).length;
 
   return (
     <main className="min-h-screen bg-[#F4F6F8] px-4 pt-6 pb-10">
@@ -37,6 +40,12 @@ export default async function AdminUsersPage() {
         <CountCell label="管理者" value={adminCount} />
       </div>
 
+      {unregisteredCount > 0 && (
+        <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          未登録のユーザーが {unregisteredCount} 人います。名前をタップすると、招待メールの再送や、メールを使わない登録リンクの作成ができます。
+        </p>
+      )}
+
       <div className="flex flex-col divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
         {/* 全ロールとも、この詳細画面からパスワード再設定メールを送れるようにするため、
             ロールに関わらず全員分クリック可能にしている（以前は保護者・システム管理者は
@@ -51,8 +60,18 @@ export default async function AdminUsersPage() {
             <div>
               <p className="font-semibold text-[#0F2537]">{u.displayName}</p>
               <p className="text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString("ja-JP")} 登録</p>
+              {u.auth && (
+                <p className="text-xs text-slate-400">
+                  {u.auth.registered
+                    ? `最終ログイン ${formatJstDateTime(u.auth.lastSignInAt)}`
+                    : `招待 ${formatJstDateTime(u.auth.invitedAt)}・タップして再送／登録リンク作成`}
+                </p>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {u.auth && !u.auth.registered && (
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">未登録</span>
+              )}
               {u.birthdateMissing && (
                 <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
                   生年月日未入力

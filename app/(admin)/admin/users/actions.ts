@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -180,5 +181,144 @@ export async function sendPasswordResetLink(userId: string): Promise<SendPasswor
     targetId: userId,
   });
 
+  return { ok: true };
+}
+
+/**
+ * 自校のユーザーの認証情報（メールアドレス・登録済みか）を取得する。
+ * 他校のユーザーIDを渡されても app_users の school_id で弾く（sendPasswordResetLink と同じ自校チェック）。
+ */
+async function getOwnSchoolAuthUser(userId: string, schoolId: string) {
+  const supabaseAdmin = createAdminClient();
+  const { data: targetUser } = await supabaseAdmin
+    .from("app_users")
+    .select("id")
+    .eq("id", userId)
+    .eq("school_id", schoolId)
+    .maybeSingle();
+  if (!targetUser) return null;
+
+  const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+  if (error || !data?.user?.email) return null;
+  return { email: data.user.email, registered: !!data.user.email_confirmed_at };
+}
+
+/** リンクの組み立てに使うサイトのURL。未設定なら、管理画面を開いているサイト（リクエストの origin）を使う */
+async function siteOrigin(): Promise<string | null> {
+  const candidates = [process.env.NEXT_PUBLIC_SITE_URL];
+  const h = await headers();
+  candidates.push(h.get("origin") ?? undefined);
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (host) candidates.push(`${h.get("x-forwarded-proto") ?? "https"}://${host}`);
+  for (const c of candidates) {
+    if (!c) continue;
+    try {
+      const url = new URL(c);
+      if (url.protocol === "https:" || url.protocol === "http:") return url.origin;
+    } catch {
+      // 次の候補へ
+    }
+  }
+  return null;
+}
+
+export type GenerateAccessLinkResult =
+  | { ok: true; link: string; kind: "invite" | "recovery" }
+  | { ok: false; error: string };
+
+/**
+ * メールを使わずに、本人に直接渡すための1回限りの登録（再設定）リンクを作る。
+ * メールが届かない・リンクが開けない人を管理者が救うための経路。メールは送らない。
+ *
+ * - 未登録（招待済みでまだリンクを確認していない）ユーザー: invite
+ * - 登録済みユーザー: recovery
+ * 同じ種類のリンクを作り直すと、以前のもの（メールで送ったリンクを含む）は使えなくなる
+ * （generateLink で実際に確認済み）。
+ *
+ * リンクはパスワードと同じ扱いのため、戻り値として管理画面に表示する以外には出さない
+ * （console・監査ログ・エラーメッセージに含めない）。監査ログには発行した事実だけを残す。
+ */
+export async function generateAccessLink(userId: string): Promise<GenerateAccessLinkResult> {
+  const admin = await requireAdmin();
+  if (!z.string().uuid().safeParse(userId).success) {
+    return { ok: false, error: "対象のユーザーが見つかりません" };
+  }
+
+  const target = await getOwnSchoolAuthUser(userId, admin.schoolId);
+  if (!target) {
+    return { ok: false, error: "対象のユーザーが見つかりません" };
+  }
+
+  const origin = await siteOrigin();
+  if (!origin) {
+    return { ok: false, error: "サイトのURLを判定できませんでした" };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  let kind: "invite" | "recovery" = target.registered ? "recovery" : "invite";
+  let result = await supabaseAdmin.auth.admin.generateLink({ type: kind, email: target.email });
+  // 確認した直後に登録済みになっていた場合（invite は登録済みユーザーには作れない）は recovery で作り直す
+  if (result.error && kind === "invite") {
+    kind = "recovery";
+    result = await supabaseAdmin.auth.admin.generateLink({ type: kind, email: target.email });
+  }
+  if (result.error || !result.data?.properties?.hashed_token) {
+    return { ok: false, error: "リンクを作成できませんでした。時間をおいてもう一度お試しください。" };
+  }
+
+  const { hashed_token, verification_type } = result.data.properties;
+  const link = new URL("/auth/confirm", origin);
+  link.searchParams.set("token_hash", hashed_token);
+  link.searchParams.set("type", verification_type);
+
+  await logAudit({
+    schoolId: admin.schoolId,
+    actorId: admin.userId,
+    action: "create",
+    targetTable: "auth_access_link",
+    targetId: userId,
+  });
+
+  return { ok: true, link: link.toString(), kind };
+}
+
+export type ResendInviteResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * 未登録のユーザーに、招待メール（Supabase の Invite テンプレート）をもう一度送る。
+ * 招待時と同じ inviteUserByEmail を使う（まだ確認していないユーザーには再送になる）。
+ * 前回送った招待メールのリンクは使えなくなる。
+ * 登録済みのユーザーには送らない（その場合はパスワード再設定メールを使う）。
+ */
+export async function resendInvite(userId: string): Promise<ResendInviteResult> {
+  const admin = await requireAdmin();
+  if (!z.string().uuid().safeParse(userId).success) {
+    return { ok: false, error: "対象のユーザーが見つかりません" };
+  }
+
+  const target = await getOwnSchoolAuthUser(userId, admin.schoolId);
+  if (!target) {
+    return { ok: false, error: "対象のユーザーが見つかりません" };
+  }
+  if (target.registered) {
+    return { ok: false, error: "このユーザーは登録済みです。パスワード再設定メールを送ってください" };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(target.email);
+  if (error) {
+    return { ok: false, error: `招待メールの再送に失敗しました: ${error.message}` };
+  }
+
+  await logAudit({
+    schoolId: admin.schoolId,
+    actorId: admin.userId,
+    action: "update",
+    targetTable: "app_users",
+    targetId: userId,
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
   return { ok: true };
 }
