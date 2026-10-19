@@ -3,7 +3,15 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/confirm", "/terms", "/privacy"];
+// /auth/code: メールのリンクが開けない人が、確認コードで登録・再設定を続ける画面（未ログインで開く）。
+// /api 配下は matcher で除外しているため、ここには書かない（各ルートが自前で認証する）。
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/confirm", "/auth/code", "/terms", "/privacy"];
+
+// 完全一致か、その配下（"/auth/code/..."）だけを公開扱いにする。
+// 単純な startsWith だと "/auth/codex" のような別のパスまで公開扱いになってしまう。
+function isPublic(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 export async function middleware(request: NextRequest) {
   // Supabaseがセッションを更新（トークンのリフレッシュ）した際、
@@ -39,7 +47,7 @@ export async function middleware(request: NextRequest) {
 
   // "/" は完全一致のみ公開扱いにする（startsWithだと全ページが"/"にマッチしてしまうため）
   const isRoot = request.nextUrl.pathname === "/";
-  const isPublicPath = isRoot || PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p));
+  const isPublicPath = isRoot || isPublic(request.nextUrl.pathname);
 
   if (!user && !isPublicPath) {
     const loginUrl = new URL("/login", request.url);
