@@ -3,6 +3,7 @@
 // 「別の端末」は別のセッション Cookie を持つブラウザコンテキストで表す。
 import { test, expect as baseExpect, type BrowserContext } from "@playwright/test";
 import { demoSessionCookies } from "./demo-auth";
+import { DEFAULT_UA, withMarker } from "./test-marker";
 import { deleteDailyLog, demoPlayer } from "./demo-db";
 import { todayInJst } from "../../lib/date";
 
@@ -16,8 +17,8 @@ async function loggedInContext(context: BrowserContext, baseURL: string) {
 }
 
 test("ログアウトはこの端末だけ。同じアカウントの別の端末はログインしたまま", async ({ browser, baseURL }) => {
-  const deviceA = await browser.newContext({ baseURL });
-  const deviceB = await browser.newContext({ baseURL });
+  const deviceA = await browser.newContext({ baseURL, userAgent: withMarker(DEFAULT_UA) });
+  const deviceB = await browser.newContext({ baseURL, userAgent: withMarker(DEFAULT_UA) });
   await loggedInContext(deviceA, baseURL!);
   await loggedInContext(deviceB, baseURL!);
 
@@ -56,6 +57,7 @@ test("ログアウトの通信が失敗したら、案内を出して押し直�
 });
 
 test("送信経過の記録は、フラグ未設定なら送られず、API も何も保存しない", async ({ page, context, baseURL, request }) => {
+  test.skip(process.env.E2E_LOGGING === "1", "フラグを有効にしたサーバーでは、記録されることを logging.spec.ts で確認する");
   const player = await demoPlayer("hanako");
   await deleteDailyLog(player, today);
   try {

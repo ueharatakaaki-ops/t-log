@@ -5,6 +5,7 @@
 import { randomBytes } from "node:crypto";
 import { test, expect as baseExpect, type Browser, type Page } from "@playwright/test";
 import { demoSessionCookies, type SimpleCookie } from "./demo-auth";
+import { DEFAULT_UA, withMarker } from "./test-marker";
 import {
   countAccessLinkAudits,
   createTempUser,
@@ -71,7 +72,13 @@ async function loginAsAdmin(page: Page, baseURL: string) {
 }
 
 async function contextWithUA(browser: Browser, baseURL: string, userAgent: string) {
-  return browser.newContext({ baseURL, userAgent, viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
+  return browser.newContext({
+    baseURL,
+    userAgent: withMarker(userAgent),
+    viewport: { width: 375, height: 667 },
+    isMobile: true,
+    hasTouch: true,
+  });
 }
 
 test("通常の招待リンク → ボタン → パスワード設定 → ロールの画面へ", async ({ page }) => {
@@ -219,7 +226,7 @@ test("管理者リンク: 一覧で未登録が分かり、1回目で登録で�
   expect(await countAccessLinkAudits(user)).toBe(1);
 
   // 本人（ログインしていない別のブラウザ）が開く
-  const first = await browser.newContext({ baseURL });
+  const first = await browser.newContext({ baseURL, userAgent: withMarker(DEFAULT_UA) });
   const p1 = await first.newPage();
   await p1.goto(link);
   await p1.getByRole("button", { name: "パスワードを設定する" }).click();
@@ -227,7 +234,7 @@ test("管理者リンク: 一覧で未登録が分かり、1回目で登録で�
   await first.close();
 
   // 2回目（別の端末で開いた想定）
-  const second = await browser.newContext({ baseURL });
+  const second = await browser.newContext({ baseURL, userAgent: withMarker(DEFAULT_UA) });
   const p2 = await second.newPage();
   await p2.goto(link);
   await p2.getByRole("button", { name: "パスワードを設定する" }).click();

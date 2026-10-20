@@ -6,6 +6,7 @@
 //   npm run test:e2e            … next start（ポート3200）を起動してテストする
 //   E2E_BASE_URL=http://localhost:3100 npm run test:e2e   … 起動済みのサーバーに対してテストする
 import { defineConfig, devices } from "@playwright/test";
+import { withMarker } from "./tests/e2e/test-marker";
 
 const PORT = 3200;
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
@@ -24,9 +25,11 @@ export default defineConfig({
     baseURL,
     trace: "retain-on-failure",
   },
+  // テストが作ったログ記録の行（UA に目印あり）を最後に削除する
+  globalTeardown: "./tests/e2e/global-teardown.ts",
   projects: [
-    { name: "chromium", use: { ...devices["Pixel 7"] } },
-    { name: "webkit", use: { ...devices["iPhone SE"] } },
+    { name: "chromium", use: { ...devices["Pixel 7"], userAgent: withMarker(devices["Pixel 7"].userAgent) } },
+    { name: "webkit", use: { ...devices["iPhone SE"], userAgent: withMarker(devices["iPhone SE"].userAgent) } },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
