@@ -1,20 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ROLE_LANDING } from "@/lib/auth/role-landing";
 
 export default function SetPasswordPage() {
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  // パスワード欄は非制御にする（表示が遅い端末で、画面の準備完了前に入力した内容が消えないように。
+  // 消えると required で送信が止まり、何も起きないように見える）。
+  // 準備完了（ready）までは送信ボタンを押せなくし、ブラウザ標準の送信でパスワードが URL に載るのを防ぐ。
+  const [ready, setReady] = useState(false);
   const [agreed, setAgreed] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    const form = new FormData(e.currentTarget);
+    const password = String(form.get("password") ?? "");
+    const confirm = String(form.get("confirm") ?? "");
 
     if (password.length < 8) {
       setError("パスワードは8文字以上で設定してください");
@@ -61,16 +70,16 @@ export default function SetPasswordPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            name="password"
+            autoComplete="new-password"
             placeholder="新しいパスワード（8文字以上）"
             required
             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-base outline-none focus:border-[#0F2537]"
           />
           <input
             type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
+            name="confirm"
+            autoComplete="new-password"
             placeholder="新しいパスワード（確認）"
             required
             className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-base outline-none focus:border-[#0F2537]"
@@ -99,7 +108,7 @@ export default function SetPasswordPage() {
 
           <button
             type="submit"
-            disabled={isPending || !agreed}
+            disabled={!ready || isPending || !agreed}
             className="h-12 rounded-xl bg-[#0F2537] text-base font-bold text-white disabled:opacity-60"
           >
             {isPending ? "設定中..." : "パスワードを設定してはじめる"}
