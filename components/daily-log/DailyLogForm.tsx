@@ -10,6 +10,7 @@ import { PracticeSection } from "./PracticeSection";
 import { NotesSection } from "./NotesSection";
 import { dailyLogSchema } from "@/lib/validations/daily-log";
 import { pingConnection, resilientPostJson, type ResilientPostOutcome } from "@/lib/client/resilient-post";
+import { sendClientLog, type SubmitTrigger } from "@/lib/client/client-log";
 
 type DailyLogFormProps = {
   logDate: string; // "YYYY-MM-DD"（対象日はサーバー側で固定して渡す。選手が任意の日付を選べる必要はない）
@@ -180,7 +181,7 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
 
   // 送信本体。POST /api/daily-log は player_id + log_date の upsert（同一内容の再送も ok）なので、
   // 打ち切り後の再試行で二重に届いても問題ない。再試行の方針は lib/client/resilient-post.ts を参照。
-  async function send() {
+  async function send(trigger: SubmitTrigger) {
     const current = parsedRef.current;
     if (!current || !current.success) return;
     if (inFlightRef.current) return;
@@ -205,6 +206,16 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
     } finally {
       inFlightRef.current = false;
     }
+
+    // 送信の経過を記録する（NEXT_PUBLIC_CLIENT_LOG_ENABLED=1 のときだけ。入力内容は送らない）
+    sendClientLog({
+      kind: "daily_log",
+      outcome: outcome.kind,
+      httpStatus: outcome.kind === "gave_up" ? undefined : outcome.status,
+      attempts: outcome.attempts,
+      trigger,
+      logDate,
+    });
 
     if (seq !== submitSeqRef.current) return;
     setSending(false);
@@ -239,22 +250,22 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
   // 未送信の印があれば自動で1回だけ再送する（送信中なら再送しない）
   useEffect(() => {
     let reconnecting = false;
-    async function onReconnect() {
+    async function onReconnect(trigger: SubmitTrigger) {
       if (reconnecting) return;
       reconnecting = true;
       try {
         await pingConnection();
         if (!hasPendingFlag() || inFlightRef.current || successHandledRef.current) return;
-        await send();
+        await send(trigger);
       } finally {
         reconnecting = false;
       }
     }
     function onVisibilityChange() {
-      if (document.visibilityState === "visible") void onReconnect();
+      if (document.visibilityState === "visible") void onReconnect("visible");
     }
     function onOnline() {
-      void onReconnect();
+      void onReconnect("online");
     }
     window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -266,7 +277,7 @@ export function DailyLogForm({ logDate, isToday = true, initial }: DailyLogFormP
   }, []);
 
   function handleSubmit() {
-    void send();
+    void send("button");
   }
 
   if (submitted) {
