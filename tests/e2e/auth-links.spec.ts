@@ -212,6 +212,8 @@ test("管理者リンク: 一覧で未登録が分かり、1回目で登録で�
   await expect(linkInput).toBeVisible();
   await expect(page.getByText("このリンクはパスワードと同じ扱いです。")).toBeVisible();
   const link = await linkInput.inputValue();
+  // リンクは、いま開いているサイト（本番なら本番のドメイン）を指す
+  expect(new URL(link).origin).toBe(new URL(baseURL!).origin);
   expect(new URL(link).pathname).toBe("/auth/confirm");
   expect(new URL(link).searchParams.get("type")).toBe("invite");
   expect(await countAccessLinkAudits(user)).toBe(1);
