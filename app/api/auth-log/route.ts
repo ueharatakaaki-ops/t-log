@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/server";
 
 // 招待・再設定リンク（/auth/confirm）とコード入力（/auth/code）の診断情報を記録する（次回の原因確定用）。
@@ -74,8 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 429 });
   }
 
-  // auth_link_events は types/supabase.ts の再生成（マイグレーション適用後）までは型に無いため、型なしで扱う
-  const supabaseAdmin = createAdminClient() as unknown as SupabaseClient;
+  const supabaseAdmin = createAdminClient();
   const since = new Date(Date.now() - 60_000).toISOString();
   const { count, error: countError } = await supabaseAdmin
     .from("auth_link_events")

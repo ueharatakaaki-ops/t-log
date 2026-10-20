@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 // 日次ログ送信の経過（結果・各試行・きっかけ）を記録する（「送信できなかった」報告の原因確認用）。
@@ -82,8 +81,7 @@ export async function POST(request: Request) {
   }
 
   const d = parsed.data;
-  // client_submit_logs は types/supabase.ts の再生成（マイグレーション適用後）までは型に無いため、型なしで扱う
-  const { error } = await (supabase as unknown as SupabaseClient).from("client_submit_logs").insert({
+  const { error } = await supabase.from("client_submit_logs").insert({
     school_id: appUser.school_id,
     user_id: user.id,
     kind: d.kind,
