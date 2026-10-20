@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { DailyLogInput } from "@/lib/validations/daily-log";
 import { saveDailyLog } from "@/lib/daily-log/save";
+import { withReadRetry } from "@/lib/daily-log/read-retry";
 
 export type SubmitDailyLogResult =
   | { ok: true }
@@ -34,16 +35,10 @@ export async function getTodaysDailyLog(logDate: string) {
 
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from("daily_logs")
-    .select("*")
-    .eq("player_id", user.id)
-    .eq("log_date", logDate)
-    .maybeSingle();
-
-  if (error) console.error("getTodaysDailyLog failed", error.code, error.message);
-
-  return data;
+  // 一時的な失敗は数回やり直し、それでも失敗したら例外にする（空のフォームで上書きされるのを防ぐ。read-retry.ts 参照）
+  return withReadRetry("getTodaysDailyLog", () =>
+    supabase.from("daily_logs").select("*").eq("player_id", user.id).eq("log_date", logDate).maybeSingle()
+  );
 }
 
 // 直近の候補日のうち、既に記録がある日を判定するための一覧取得。
@@ -59,13 +54,9 @@ export async function getExistingDailyLogDates(dates: string[]): Promise<Set<str
 
   if (!user) return new Set();
 
-  const { data, error } = await supabase
-    .from("daily_logs")
-    .select("log_date")
-    .eq("player_id", user.id)
-    .in("log_date", dates);
-
-  if (error) console.error("getExistingDailyLogDates failed", error.code, error.message);
+  const data = await withReadRetry("getExistingDailyLogDates", () =>
+    supabase.from("daily_logs").select("log_date").eq("player_id", user.id).in("log_date", dates)
+  );
 
   return new Set((data ?? []).map((row) => row.log_date as string));
 }
