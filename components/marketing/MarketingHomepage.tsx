@@ -1,7 +1,20 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { MARKETING_STYLES, MARKETING_BODY_HTML } from "@/lib/marketing/homepage-content";
+import {
+  MARKETING_STYLES,
+  MARKETING_BODY_HTML_BEFORE_DEMO,
+  MARKETING_BODY_HTML_AFTER_DEMO,
+} from "@/lib/marketing/homepage-content";
+import { DemoSection } from "@/components/marketing/DemoSection";
+
+// 本体HTMLの外枠（homepage-content.ts の MARKETING_WRAPPER_OPEN と同じ style）。
+// 外枠の中に、前半HTML → 操作デモ動画セクション → 後半HTML の順に並べる。
+const WRAPPER_STYLE = { width: "100%", minHeight: "100vh", "--accent": "#00A859" } as React.CSSProperties;
+
+// 前半・後半のHTMLを入れる要素。display: contents にして箱を作らず、
+// 追従ヘッダー（position: sticky）や各セクションが外枠の直下にあるのと同じ配置にする。
+const CONTENTS_STYLE: React.CSSProperties = { display: "contents" };
 
 // 未ログイン・かつ認証リンク（招待/パスワード再設定）経由でもない状態で
 // トップページ（"/"）に来た訪問者向けに表示する、製品紹介サイト。
@@ -117,7 +130,11 @@ export function MarketingHomepage() {
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
       />
       <style>{MARKETING_STYLES}</style>
-      <div ref={containerRef} dangerouslySetInnerHTML={{ __html: MARKETING_BODY_HTML }} />
+      <div ref={containerRef} style={WRAPPER_STYLE}>
+        <div style={CONTENTS_STYLE} dangerouslySetInnerHTML={{ __html: MARKETING_BODY_HTML_BEFORE_DEMO }} />
+        <DemoSection />
+        <div style={CONTENTS_STYLE} dangerouslySetInnerHTML={{ __html: MARKETING_BODY_HTML_AFTER_DEMO }} />
+      </div>
     </>
   );
 }

@@ -64,7 +64,8 @@ export const config = {
   // 到達できなくなる（実際にmonthly-reportsのcronがこれで失敗していた）。
   // 画像ファイル（public/logo.pngなど）も除外する。除外しないと未ログイン時に
   // /loginへリダイレクトされ、ログイン画面のロゴ自体が表示できなくなる。
+  // トップページの操作デモ動画（public/videos/*.mp4）も同じ理由で除外する。
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|mp4)$).*)",
   ],
 };
